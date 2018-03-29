@@ -14,7 +14,4 @@ class CUSTOMJIGSAWPUZZLE_API ACustomJigsawPuzzleGameModeBase : public AGameModeB
 {
 	GENERATED_BODY()
 	
-	
-	
-	
 };
