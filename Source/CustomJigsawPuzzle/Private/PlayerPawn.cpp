@@ -9,14 +9,6 @@ APlayerPawn::APlayerPawn()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-	OurCameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
-	OurCameraSpringArm->SetupAttachment(RootComponent);
-	OurCameraSpringArm->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 50.0f), FRotator(-60.0f, 0.0f, 0.0f));
-	OurCameraSpringArm->TargetArmLength = 400.f;
-	OurCameraSpringArm->bEnableCameraLag = true;
-	OurCameraSpringArm->CameraLagSpeed = 3.0f;
-
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
