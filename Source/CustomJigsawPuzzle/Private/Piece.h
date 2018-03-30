@@ -6,6 +6,13 @@
 #include "GameFramework/Actor.h"
 #include "Piece.generated.h"
 
+UENUM(BlueprintType)
+enum class EPieceState : uint8 {
+	ENone,
+	EPieceActive,
+	EPieceSelect,
+};
+
 UCLASS()
 class APiece : public AActor
 {
@@ -14,6 +21,8 @@ class APiece : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APiece();
+
+	EPieceState CurrentState;
 
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		class USceneComponent* DummyRoot;
@@ -30,6 +39,11 @@ public:
 	UPROPERTY()
 		class UMaterialInstance* SelectMaterial;
 
+	UFUNCTION()
+		void HandleMouseDown();
+
+	UFUNCTION()
+		void HandleMouseUp();
 
 	UFUNCTION()
 		void MouseCursorOverBigin(UPrimitiveComponent* TouchedComponent);
@@ -38,24 +52,18 @@ public:
 		void MouseCursorOverEnd(UPrimitiveComponent* TouchedComponent);
 
 	UFUNCTION()
-		void BlockClicked(UPrimitiveComponent* ClickedComp, FKey ButtonClicked);
-
-	UFUNCTION()
-		void OnFingerPressedBlock(ETouchIndex::Type FingerIndex, UPrimitiveComponent* TouchedComponent);
-
-
-	void HandleClicked();
-
-	void Highlight(bool bOn);
+		void Highlight(bool bOn);
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+		void ChangePieceState(EPieceState State);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	
-	
 };
+

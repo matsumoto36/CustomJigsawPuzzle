@@ -16,6 +16,20 @@ public:
 	APlayerPawn();
 
 protected:
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		class APiece* CurrentPieceFocus;
+
+	void TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers);
+
+	void TriggerMouseDown();
+
+	void TriggerMouseUp();
+
+public:
+
+
+protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -26,4 +40,5 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
 };

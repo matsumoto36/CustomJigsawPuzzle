@@ -11,6 +11,7 @@ APiece::APiece()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	CurrentState = EPieceState::ENone;
 
 	// Structure to hold one-time initialization
 	struct FConstructorStatics {
@@ -21,7 +22,7 @@ APiece::APiece()
 		ConstructorHelpers::FObjectFinderOptional<UMaterialInstance> SelectMaterial;
 		FConstructorStatics()
 			: PieceMesh(TEXT("/Game/Meshes/SM_TestPiece.SM_TestPiece"))
-			, BaseMaterial(TEXT("/Game/Materials/MI_PieceBase.MI_PieceBase"))
+			, BaseMaterial(TEXT("/Game/Materials/M_PieceBase.M_PieceBase"))
 			, ActiveMaterial(TEXT("/Game/Materials/MI_PieceActive.MI_PieceActive"))
 			, SelectMaterial(TEXT("/Game/Materials/MI_PieceSelect.MI_PieceSelect"))
 		{}
@@ -38,10 +39,9 @@ APiece::APiece()
 	BlockMesh->SetStaticMesh(ConstructorStatics.PieceMesh.Get());
 	BlockMesh->SetMaterial(0, ConstructorStatics.BaseMaterial.Get());
 	BlockMesh->SetupAttachment(DummyRoot);
-	BlockMesh->OnBeginCursorOver.AddDynamic(this, &APiece::MouseCursorOverBigin);
-	BlockMesh->OnEndCursorOver.AddDynamic(this, &APiece::MouseCursorOverEnd);
-	BlockMesh->OnClicked.AddDynamic(this, &APiece::BlockClicked);
-	BlockMesh->OnInputTouchBegin.AddDynamic(this, &APiece::OnFingerPressedBlock);
+	BlockMesh->SetEnableGravity(true);
+	//BlockMesh->OnBeginCursorOver.AddDynamic(this, &APiece::MouseCursorOverBigin);
+	//BlockMesh->OnEndCursorOver.AddDynamic(this, &APiece::MouseCursorOverEnd);
 
 	// Save a pointer to the orange material
 	BaseMaterial = ConstructorStatics.BaseMaterial.Get();
@@ -63,6 +63,13 @@ void APiece::Tick(float DeltaTime)
 
 }
 
+void APiece::HandleMouseDown() {
+	ChangePieceState(EPieceState::EPieceSelect);
+}
+
+void APiece::HandleMouseUp() {
+	ChangePieceState(EPieceState::EPieceActive);
+}
 
 void APiece::MouseCursorOverBigin(UPrimitiveComponent* TouchedComponent) {
 	Highlight(true);
@@ -72,29 +79,36 @@ void APiece::MouseCursorOverEnd(UPrimitiveComponent* TouchedComponent) {
 	Highlight(false);
 }
 
-void APiece::BlockClicked(UPrimitiveComponent* ClickedComp, FKey ButtonClicked) {
-	HandleClicked();
+void APiece::ChangePieceState(EPieceState State) {
+
+	//if (State == CurrentState) return;
+
+
+	switch (State) {
+			break;
+		case EPieceState::EPieceActive:
+			BlockMesh->SetMaterial(0, ActiveMaterial);
+			break;
+		case EPieceState::EPieceSelect:
+			BlockMesh->SetMaterial(0, SelectMaterial);
+			break;
+		case EPieceState::ENone:
+		default:
+			BlockMesh->SetMaterial(0, BaseMaterial);
+			break;
+	}
+
+	CurrentState = State;
+
 }
 
-void APiece::OnFingerPressedBlock(ETouchIndex::Type FingerIndex, UPrimitiveComponent* TouchedComponent) {
-	HandleClicked();
-}
-
-
-void APiece::HandleClicked() {
-	// Check we are not already active
-
-	// Change material
-	BlockMesh->SetMaterial(0, SelectMaterial);
-
-}
 
 void APiece::Highlight(bool bOn) {
 
 	if (bOn) {
-		BlockMesh->SetMaterial(0, BaseMaterial);
+		ChangePieceState(EPieceState::EPieceActive);
 	}
 	else {
-		BlockMesh->SetMaterial(0, ActiveMaterial);
+		ChangePieceState(EPieceState::ENone);
 	}
 }
