@@ -44,6 +44,7 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	//“ü—Í‚ÉƒoƒCƒ“ƒh
 	PlayerInputComponent->BindAction("SelectButton", EInputEvent::IE_Pressed, this, &APlayerPawn::TriggerMouseDown);
 	PlayerInputComponent->BindAction("SelectButton", EInputEvent::IE_Released, this, &APlayerPawn::TriggerMouseUp);
 

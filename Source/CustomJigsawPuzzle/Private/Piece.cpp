@@ -39,9 +39,8 @@ APiece::APiece()
 	BlockMesh->SetStaticMesh(ConstructorStatics.PieceMesh.Get());
 	BlockMesh->SetMaterial(0, ConstructorStatics.BaseMaterial.Get());
 	BlockMesh->SetupAttachment(DummyRoot);
+	BlockMesh->SetSimulatePhysics(true);
 	BlockMesh->SetEnableGravity(true);
-	//BlockMesh->OnBeginCursorOver.AddDynamic(this, &APiece::MouseCursorOverBigin);
-	//BlockMesh->OnEndCursorOver.AddDynamic(this, &APiece::MouseCursorOverEnd);
 
 	// Save a pointer to the orange material
 	BaseMaterial = ConstructorStatics.BaseMaterial.Get();
