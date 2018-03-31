@@ -6,6 +6,9 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstance.h"
 
+#include "EngineGlobals.h"
+#include "Runtime/Engine/Classes/Engine/Engine.h"
+
 // Sets default values
 APiece::APiece()
 {
@@ -48,20 +51,6 @@ APiece::APiece()
 	SelectMaterial = ConstructorStatics.SelectMaterial.Get();
 }
 
-// Called when the game starts or when spawned
-void APiece::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void APiece::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
 void APiece::HandleMouseDown() {
 	ChangePieceState(EPieceState::EPieceSelect);
 }
@@ -78,30 +67,6 @@ void APiece::MouseCursorOverEnd(UPrimitiveComponent* TouchedComponent) {
 	Highlight(false);
 }
 
-void APiece::ChangePieceState(EPieceState State) {
-
-	//if (State == CurrentState) return;
-
-
-	switch (State) {
-			break;
-		case EPieceState::EPieceActive:
-			BlockMesh->SetMaterial(0, ActiveMaterial);
-			break;
-		case EPieceState::EPieceSelect:
-			BlockMesh->SetMaterial(0, SelectMaterial);
-			break;
-		case EPieceState::ENone:
-		default:
-			BlockMesh->SetMaterial(0, BaseMaterial);
-			break;
-	}
-
-	CurrentState = State;
-
-}
-
-
 void APiece::Highlight(bool bOn) {
 
 	if (bOn) {
@@ -110,4 +75,67 @@ void APiece::Highlight(bool bOn) {
 	else {
 		ChangePieceState(EPieceState::ENone);
 	}
+}
+
+void APiece::RollingDefault(float DeltaTime) {
+
+	FRotator Rotation = BlockMesh->GetComponentRotation();
+	float rotSpeed = 1000.0f * DeltaTime;
+	
+	Rotation.Pitch += fabsf(Rotation.Pitch) > rotSpeed ? Rotation.Pitch > 0 ? -rotSpeed : rotSpeed : -Rotation.Pitch;
+	Rotation.Roll += fabsf(Rotation.Roll) > rotSpeed ? Rotation.Roll > 0 ? -rotSpeed : rotSpeed : -Rotation.Roll;
+	Rotation.Yaw += fabsf(Rotation.Yaw) > rotSpeed ? Rotation.Yaw > 0 ? -rotSpeed : rotSpeed : -Rotation.Yaw;
+
+	BlockMesh->SetWorldRotation(Rotation);
+}
+
+// Called every frame
+void APiece::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+
+	switch (CurrentState) {
+		case EPieceState::EPieceActive:
+			break;
+		case EPieceState::EPieceSelect:
+			RollingDefault(DeltaTime);
+			break;
+		case EPieceState::ENone:
+		default:
+			break;
+	}
+}
+
+void APiece::ChangePieceState(EPieceState State) {
+
+	if (State == CurrentState) return;
+
+	switch (State) {
+		case EPieceState::EPieceActive:
+			BlockMesh->SetMaterial(0, ActiveMaterial);
+			BlockMesh->SetSimulatePhysics(true);
+			BlockMesh->SetEnableGravity(true);
+			break;
+
+		case EPieceState::EPieceSelect:
+			BlockMesh->SetMaterial(0, SelectMaterial);
+			BlockMesh->SetSimulatePhysics(false);
+			BlockMesh->SetEnableGravity(false);
+			break;
+
+		case EPieceState::ENone:
+		default:
+			BlockMesh->SetMaterial(0, BaseMaterial);
+			BlockMesh->SetSimulatePhysics(true);
+			BlockMesh->SetEnableGravity(true);
+			break;
+	}
+
+	CurrentState = State;
+
+}
+
+// Called when the game starts or when spawned
+void APiece::BeginPlay() {
+	Super::BeginPlay();
+
 }

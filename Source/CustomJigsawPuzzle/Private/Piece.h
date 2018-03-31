@@ -19,17 +19,16 @@ class APiece : public AActor
 	GENERATED_BODY()
 	
 public:
-	
-	// Sets default values for this actor's properties
-	APiece();
 
 	EPieceState CurrentState;
+
+private:
 
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		class USceneComponent* DummyRoot;
 
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-		class UStaticMeshComponent* BlockMesh;
+		UStaticMeshComponent* BlockMesh;
 
 	UPROPERTY()
 		class UMaterial* BaseMaterial;
@@ -39,6 +38,10 @@ public:
 
 	UPROPERTY()
 		class UMaterialInstance* SelectMaterial;
+
+public:
+
+	APiece();
 
 	UFUNCTION()
 		void HandleMouseDown();
@@ -55,16 +58,21 @@ public:
 	UFUNCTION()
 		void Highlight(bool bOn);
 
+	UFUNCTION()
+		/* ‰ñ“]‚ð–ß‚· */
+		void RollingDefault(float DeltaTime);
+
+	UStaticMeshComponent* GetBody() { return BlockMesh; }
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
 	UFUNCTION()
 		void ChangePieceState(EPieceState State);
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
 
 };
-

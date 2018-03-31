@@ -3,6 +3,7 @@
 #include "PlayerPawn.h"
 #include "Piece.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
+#include "Engine/StaticMesh.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
@@ -17,24 +18,29 @@ APlayerPawn::APlayerPawn()
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
-// Called when the game starts or when spawned
-void APlayerPawn::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
 // Called every frame
 void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
+		if (bIsSelectPiece) {
 
-		FVector Start, Dir, End;
-		PC->DeprojectMousePositionToWorld(Start, Dir);
-		End = Start + (Dir * 8000.0f);
-		TraceForBlock(Start, End, false);
+			//移動先を計算
+			CalcPieceLocation(PieceMovePosition);
+
+			//ゆっくり移動
+
+			auto movePos = FMath::VInterpTo(CurrentPieceFocus->GetBody()->GetComponentLocation(), PieceMovePosition, DeltaTime, 10.0f);
+			CurrentPieceFocus->GetBody()->SetWorldLocation(movePos);
+		}
+		else {
+
+			FVector Start, Dir, End;
+			PC->DeprojectMousePositionToWorld(Start, Dir);
+			End = Start + (Dir * 8000.0f);
+			TraceForBlock(Start, End, false);
+		}
 	}
 
 }
@@ -54,18 +60,6 @@ void APlayerPawn::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult
 	Super::CalcCamera(DeltaTime, OutResult);
 
 	OutResult.Rotation = FRotator(-90.0f, -90.0f, 0.0f);
-}
-
-void APlayerPawn::TriggerMouseDown() {
-	if (CurrentPieceFocus) {
-		CurrentPieceFocus->HandleMouseDown();
-	}
-}
-
-void APlayerPawn::TriggerMouseUp() {
-	if (CurrentPieceFocus) {
-		CurrentPieceFocus->HandleMouseUp();
-	}
 }
 
 void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers) {
@@ -91,4 +85,69 @@ void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool b
 		CurrentPieceFocus->Highlight(false);
 		CurrentPieceFocus = nullptr;
 	}
+}
+
+void APlayerPawn::TriggerMouseDown() {
+	if (CurrentPieceFocus) {
+		bIsSelectPiece = true;
+		CurrentPieceFocus->HandleMouseDown();
+	}
+}
+
+void APlayerPawn::TriggerMouseUp() {
+	if (CurrentPieceFocus) {
+		bIsSelectPiece = false;
+		CurrentPieceFocus->HandleMouseUp();
+	}
+}
+
+// Called when the game starts or when spawned
+void APlayerPawn::BeginPlay() {
+	Super::BeginPlay();
+
+}
+
+bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
+
+	if (!CurrentPieceFocus) return false;
+	
+	FVector pieceLocation;
+
+	//目標の高度を計算
+	auto pieceBody = CurrentPieceFocus->GetBody();
+	
+	auto startPosition = pieceBody->GetComponentLocation();
+	auto endPosition = startPosition;
+	endPosition.Z -= 100; //後でconstに移行
+
+	FHitResult HitResult;
+	GetWorld()->LineTraceSingleByChannel(HitResult, startPosition, endPosition, ECC_Visibility);
+
+	if(HitResult.Actor.IsValid()){
+		pieceLocation.Z = HitResult.ImpactPoint.Z + SelectedPieceHeight;
+	}
+
+	//目標の位置を計算(PieceLocation.Zとマウス方向が交差する点)
+	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
+
+		FVector start, dir;
+		PC->DeprojectMousePositionToWorld(start, dir);
+
+		auto ratio = (PieceLocation.Z - start.Z) / dir.Z;
+		pieceLocation.X = start.X + dir.X * ratio;
+		pieceLocation.Y = start.Y + dir.Y * ratio;
+
+		DrawDebugSolidBox(GetWorld(), pieceLocation, FVector(1.0f), FColor::Red);
+
+		//可動範囲外であれば収める
+		if (fabsf(pieceLocation.X) > MaxMoveArea.X)
+			pieceLocation.X = pieceLocation.X > 0 ? MaxMoveArea.X : -MaxMoveArea.X;
+		if (fabsf(pieceLocation.Y) > MaxMoveArea.Y)
+			pieceLocation.Y = pieceLocation.Y > 0 ? MaxMoveArea.Y : -MaxMoveArea.Y;
+
+		PieceLocation = pieceLocation;
+		return true;
+	}
+
+	return false;
 }

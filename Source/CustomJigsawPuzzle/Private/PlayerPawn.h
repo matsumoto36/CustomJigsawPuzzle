@@ -11,29 +11,27 @@ class CUSTOMJIGSAWPUZZLE_API APlayerPawn : public APawn
 {
 	GENERATED_BODY()
 
-public:
-	// Sets default values for this pawn's properties
-	APlayerPawn();
-
 protected:
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		float SelectedPieceHeight = 10.0f;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 		class APiece* CurrentPieceFocus;
 
-	void TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers);
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		FVector PieceMovePosition;
 
-	void TriggerMouseDown();
-
-	void TriggerMouseUp();
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		FVector2D MaxMoveArea = FVector2D(40.0f, 40.0f);
 
 public:
 
+	bool bIsSelectPiece = false;
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	// Sets default values for this pawn's properties
+	APlayerPawn();
 
-public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -41,4 +39,19 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
+
+protected:
+
+	void TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers);
+
+	void TriggerMouseDown();
+
+	void TriggerMouseUp();
+
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+private:
+
+	bool CalcPieceLocation(FVector &PieceLocation);
 };
