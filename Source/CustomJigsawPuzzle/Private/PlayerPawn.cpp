@@ -30,7 +30,6 @@ void APlayerPawn::Tick(float DeltaTime)
 			CalcPieceLocation(PieceMovePosition);
 
 			//‚ä‚Á‚­‚èˆÚ“®
-
 			auto movePos = FMath::VInterpTo(CurrentPieceFocus->GetBody()->GetComponentLocation(), PieceMovePosition, DeltaTime, 10.0f);
 			CurrentPieceFocus->GetBody()->SetWorldLocation(movePos);
 		}
@@ -59,7 +58,7 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 void APlayerPawn::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) {
 	Super::CalcCamera(DeltaTime, OutResult);
 
-	OutResult.Rotation = FRotator(-90.0f, -90.0f, 0.0f);
+	//OutResult.Rotation = FRotator(-90.0f, -90.0f, 0.0f);
 }
 
 void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers) {

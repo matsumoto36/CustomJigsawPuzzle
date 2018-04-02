@@ -28,7 +28,7 @@ private:
 		class USceneComponent* DummyRoot;
 
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-		UStaticMeshComponent* BlockMesh;
+		UStaticMeshComponent* PieceMesh;
 
 	UPROPERTY()
 		class UMaterial* BaseMaterial;
@@ -62,7 +62,12 @@ public:
 		/* ‰ñ“]‚ð–ß‚· */
 		void RollingDefault(float DeltaTime);
 
-	UStaticMeshComponent* GetBody() { return BlockMesh; }
+	UStaticMeshComponent* GetBody() { return PieceMesh; }
+
+	void SetMeshAndMaterial(UStaticMesh* NewMesh, UMaterial* NewMaterial){ 
+		PieceMesh->SetStaticMesh(NewMesh); 
+		PieceMesh->SetMaterial(0, NewMaterial);
+	}
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

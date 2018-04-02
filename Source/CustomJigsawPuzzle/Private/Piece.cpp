@@ -38,12 +38,12 @@ APiece::APiece()
 	RootComponent = DummyRoot;
 
 	// Create static mesh component
-	BlockMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh0"));
-	BlockMesh->SetStaticMesh(ConstructorStatics.PieceMesh.Get());
-	BlockMesh->SetMaterial(0, ConstructorStatics.BaseMaterial.Get());
-	BlockMesh->SetupAttachment(DummyRoot);
-	BlockMesh->SetSimulatePhysics(true);
-	BlockMesh->SetEnableGravity(true);
+	PieceMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PieceMesh0"));
+	PieceMesh->SetupAttachment(DummyRoot);
+	PieceMesh->SetSimulatePhysics(true);
+	PieceMesh->SetEnableGravity(true);
+
+	SetMeshAndMaterial(ConstructorStatics.PieceMesh.Get(), ConstructorStatics.BaseMaterial.Get());
 
 	// Save a pointer to the orange material
 	BaseMaterial = ConstructorStatics.BaseMaterial.Get();
@@ -79,14 +79,14 @@ void APiece::Highlight(bool bOn) {
 
 void APiece::RollingDefault(float DeltaTime) {
 
-	FRotator Rotation = BlockMesh->GetComponentRotation();
+	FRotator Rotation = PieceMesh->GetComponentRotation();
 	float rotSpeed = 1000.0f * DeltaTime;
 	
 	Rotation.Pitch += fabsf(Rotation.Pitch) > rotSpeed ? Rotation.Pitch > 0 ? -rotSpeed : rotSpeed : -Rotation.Pitch;
 	Rotation.Roll += fabsf(Rotation.Roll) > rotSpeed ? Rotation.Roll > 0 ? -rotSpeed : rotSpeed : -Rotation.Roll;
 	Rotation.Yaw += fabsf(Rotation.Yaw) > rotSpeed ? Rotation.Yaw > 0 ? -rotSpeed : rotSpeed : -Rotation.Yaw;
 
-	BlockMesh->SetWorldRotation(Rotation);
+	PieceMesh->SetWorldRotation(Rotation);
 }
 
 // Called every frame
@@ -111,22 +111,22 @@ void APiece::ChangePieceState(EPieceState State) {
 
 	switch (State) {
 		case EPieceState::EPieceActive:
-			BlockMesh->SetMaterial(0, ActiveMaterial);
-			BlockMesh->SetSimulatePhysics(true);
-			BlockMesh->SetEnableGravity(true);
+			PieceMesh->SetMaterial(0, ActiveMaterial);
+			PieceMesh->SetSimulatePhysics(true);
+			PieceMesh->SetEnableGravity(true);
 			break;
 
 		case EPieceState::EPieceSelect:
-			BlockMesh->SetMaterial(0, SelectMaterial);
-			BlockMesh->SetSimulatePhysics(false);
-			BlockMesh->SetEnableGravity(false);
+			PieceMesh->SetMaterial(0, SelectMaterial);
+			PieceMesh->SetSimulatePhysics(false);
+			PieceMesh->SetEnableGravity(false);
 			break;
 
 		case EPieceState::ENone:
 		default:
-			BlockMesh->SetMaterial(0, BaseMaterial);
-			BlockMesh->SetSimulatePhysics(true);
-			BlockMesh->SetEnableGravity(true);
+			PieceMesh->SetMaterial(0, BaseMaterial);
+			PieceMesh->SetSimulatePhysics(true);
+			PieceMesh->SetEnableGravity(true);
 			break;
 	}
 
