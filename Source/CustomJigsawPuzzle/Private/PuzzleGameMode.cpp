@@ -3,19 +3,50 @@
 #include "PuzzleGameMode.h"
 #include "PuzzlePlayerController.h"
 #include "PlayerPawn.h"
+
+#include "Engine.h"
+
+#include "Developer/DesktopPlatform/Public/DesktopPlatformModule.h"
 #include "Runtime/Engine/Classes/Engine/Texture2D.h"
 #include "Runtime/Slate/Public/Framework/Application/SlateApplication.h"
 #include "Runtime/Core/Public/Misc/FileHelper.h"
-#include "Developer/DesktopPlatform/Public/DesktopPlatformModule.h"
-
+#include "Runtime/Engine/Classes/Engine/World.h"
 #include "Editor/MainFrame/Public/Interfaces/IMainFrameModule.h"
 
-#include "Engine.h"
 
 APuzzleGameMode::APuzzleGameMode() {
 
 	DefaultPawnClass = APlayerPawn::StaticClass();
 	PlayerControllerClass = APuzzlePlayerController::StaticClass();
+}
+
+void APuzzleGameMode::InitializeGame() {
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Initialize GameMode");
+
+	UWorld* const World = GetWorld();
+
+	// Nullチェック
+	if (!World) return;
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "GetWorld");
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.bAllowDuringConstructionScript = true;
+	SpawnParams.bDeferConstruction = false;
+	SpawnParams.bNoFail = true;
+	SpawnParams.Instigator = Instigator;
+	SpawnParams.Name = {};
+	SpawnParams.ObjectFlags = EObjectFlags::RF_NoFlags;
+	SpawnParams.OverrideLevel = nullptr;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Template = nullptr;
+
+	PieceGenerator = GetWorld()->SpawnActor<APieceGenerator>(FVector(), FRotator(), SpawnParams);
+	//PieceGenerator = NewObject<APieceGenerator>();
 }
 
 bool APuzzleGameMode::LoadPuzzleTextureData() {
@@ -73,7 +104,12 @@ UTexture2D* APuzzleGameMode::LoadTexture2DFromFile(const FString& FileName, bool
 	if (!FileName.Split(".", &fileNameWithOutExt, &fileExt, ESearchCase::CaseSensitive, ESearchDir::FromEnd)) return nullptr;
 
 	IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-	IImageWrapperPtr ImageWrapper = ImageWrapperModule.CreateImageWrapper(ConvertImageFormat(fileExt));
+	EImageFormat format = ConvertImageFormat(fileExt);
+
+	//拡張子が判断できなかった場合
+	if (format == EImageFormat::Invalid) return nullptr;
+
+	IImageWrapperPtr ImageWrapper = ImageWrapperModule.CreateImageWrapper(format);
 
 	//Load From File
 	TArray<uint8> RawFileData;
@@ -134,6 +170,7 @@ EImageFormat APuzzleGameMode::ConvertImageFormat(FString FileExt) {
 	if (ext == "png") return EImageFormat::PNG;
 	if (ext == "jpeg") return EImageFormat::JPEG;
 	if (ext == "jpg") return EImageFormat::JPEG;
+	if (ext == "bmp") return EImageFormat::BMP;
 
-	return EImageFormat::BMP;
+	return EImageFormat::Invalid;
 }

@@ -9,6 +9,9 @@
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
 
+#include "Engine.h"
+
+
 // Sets default values
 APlayerPawn::APlayerPawn()
 {
@@ -31,7 +34,7 @@ void APlayerPawn::Tick(float DeltaTime)
 
 			//‚ä‚Á‚­‚èˆÚ“®
 			auto movePos = FMath::VInterpTo(CurrentPieceFocus->GetBody()->GetComponentLocation(), PieceMovePosition, DeltaTime, 10.0f);
-			CurrentPieceFocus->GetBody()->SetWorldLocation(movePos);
+			CurrentPieceFocus->GetCollision()->SetWorldLocation(movePos);
 		}
 		else {
 
@@ -63,7 +66,7 @@ void APlayerPawn::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult
 
 void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers) {
 	FHitResult HitResult;
-	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility);
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_PhysicsBody);
 	if (bDrawDebugHelpers) {
 		DrawDebugLine(GetWorld(), Start, HitResult.Location, FColor::Red);
 		DrawDebugSolidBox(GetWorld(), HitResult.Location, FVector(20.0f), FColor::Red);
@@ -123,6 +126,10 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 	GetWorld()->LineTraceSingleByChannel(HitResult, startPosition, endPosition, ECC_Visibility);
 
 	if(HitResult.Actor.IsValid()){
+		
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, HitResult.GetComponent()->GetFName().ToString());
+
 		pieceLocation.Z = HitResult.ImpactPoint.Z + SelectedPieceHeight;
 	}
 

@@ -8,7 +8,7 @@ public class CustomJigsawPuzzle : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "DesktopPlatform" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "DesktopPlatform", "ProceduralMeshComponent" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate" , "SlateCore" });
 

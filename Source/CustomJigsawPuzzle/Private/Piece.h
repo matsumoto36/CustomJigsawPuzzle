@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Runtime/Engine/Classes/Components/BoxComponent.h"
+#include "ProceduralMeshComponent.h"
 #include "Piece.generated.h"
 
 UENUM(BlueprintType)
@@ -28,7 +30,10 @@ private:
 		class USceneComponent* DummyRoot;
 
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-		UStaticMeshComponent* PieceMesh;
+		UBoxComponent* PieceCollision;
+
+	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+		UProceduralMeshComponent* PieceMesh;
 
 	UPROPERTY()
 		class UMaterial* BaseMaterial;
@@ -42,6 +47,15 @@ private:
 public:
 
 	APiece();
+
+	UFUNCTION(BlueprintCallable)
+		UBoxComponent* GetCollision() { return PieceCollision; }
+
+	UFUNCTION(BlueprintCallable)
+		UProceduralMeshComponent* GetBody() { return PieceMesh; }
+
+	UFUNCTION(BlueprintCallable)
+		void SetBody(UProceduralMeshComponent* NewMesh) { PieceMesh = NewMesh; }
 
 	UFUNCTION()
 		void HandleMouseDown();
@@ -61,13 +75,6 @@ public:
 	UFUNCTION()
 		/* ‰ñ“]‚ð–ß‚· */
 		void RollingDefault(float DeltaTime);
-
-	UStaticMeshComponent* GetBody() { return PieceMesh; }
-
-	void SetMeshAndMaterial(UStaticMesh* NewMesh, UMaterial* NewMaterial){ 
-		PieceMesh->SetStaticMesh(NewMesh); 
-		PieceMesh->SetMaterial(0, NewMaterial);
-	}
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

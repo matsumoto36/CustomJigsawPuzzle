@@ -16,39 +16,22 @@ APiece::APiece()
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentState = EPieceState::ENone;
 
-	// Structure to hold one-time initialization
-	struct FConstructorStatics {
-
-		ConstructorHelpers::FObjectFinderOptional<UStaticMesh> PieceMesh;
-		ConstructorHelpers::FObjectFinderOptional<UMaterial> BaseMaterial;
-		ConstructorHelpers::FObjectFinderOptional<UMaterialInstance> ActiveMaterial;
-		ConstructorHelpers::FObjectFinderOptional<UMaterialInstance> SelectMaterial;
-		FConstructorStatics()
-			: PieceMesh(TEXT("/Game/Meshes/SM_TestPiece.SM_TestPiece"))
-			, BaseMaterial(TEXT("/Game/Materials/M_PieceBase.M_PieceBase"))
-			, ActiveMaterial(TEXT("/Game/Materials/MI_PieceActive.MI_PieceActive"))
-			, SelectMaterial(TEXT("/Game/Materials/MI_PieceSelect.MI_PieceSelect"))
-		{}
-	};
-
-	static FConstructorStatics ConstructorStatics;
-
 	// Create dummy root scene component
 	DummyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Dummy0"));
 	RootComponent = DummyRoot;
 
-	// Create static mesh component
-	PieceMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PieceMesh0"));
-	PieceMesh->SetupAttachment(DummyRoot);
-	PieceMesh->SetSimulatePhysics(true);
-	PieceMesh->SetEnableGravity(true);
+	//コリジョンを生成
+	PieceCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("Box Collision"));
+	PieceCollision->SetupAttachment(DummyRoot);
+	PieceCollision->SetCollisionProfileName("BlockAll");
+	PieceCollision->SetSimulatePhysics(true);
+	PieceCollision->SetEnableGravity(true);
+	PieceCollision->SetBoxExtent(FVector(10, 10, 1));
 
-	SetMeshAndMaterial(ConstructorStatics.PieceMesh.Get(), ConstructorStatics.BaseMaterial.Get());
-
-	// Save a pointer to the orange material
-	BaseMaterial = ConstructorStatics.BaseMaterial.Get();
-	ActiveMaterial = ConstructorStatics.ActiveMaterial.Get();
-	SelectMaterial = ConstructorStatics.SelectMaterial.Get();
+	//メッシュを生成
+	PieceMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("PieceMesh0"));
+	PieceMesh->SetCollisionProfileName("NoCollision");
+	PieceMesh->SetupAttachment(PieceCollision);
 }
 
 void APiece::HandleMouseDown() {
@@ -112,21 +95,24 @@ void APiece::ChangePieceState(EPieceState State) {
 	switch (State) {
 		case EPieceState::EPieceActive:
 			PieceMesh->SetMaterial(0, ActiveMaterial);
-			PieceMesh->SetSimulatePhysics(true);
-			PieceMesh->SetEnableGravity(true);
+			PieceCollision->SetSimulatePhysics(true);
+			PieceCollision->SetEnableGravity(true);
+			PieceCollision->SetCollisionProfileName("BlockAll");
 			break;
 
 		case EPieceState::EPieceSelect:
 			PieceMesh->SetMaterial(0, SelectMaterial);
-			PieceMesh->SetSimulatePhysics(false);
-			PieceMesh->SetEnableGravity(false);
+			PieceCollision->SetSimulatePhysics(false);
+			PieceCollision->SetEnableGravity(false);
+			PieceCollision->SetCollisionProfileName("NoCollision");
 			break;
 
 		case EPieceState::ENone:
 		default:
 			PieceMesh->SetMaterial(0, BaseMaterial);
-			PieceMesh->SetSimulatePhysics(true);
-			PieceMesh->SetEnableGravity(true);
+			PieceCollision->SetSimulatePhysics(true);
+			PieceCollision->SetEnableGravity(true);
+			PieceCollision->SetCollisionProfileName("BlockAll");
 			break;
 	}
 

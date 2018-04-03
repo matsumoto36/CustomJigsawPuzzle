@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+#include "PieceGenerator.h"
 
 #include "Runtime/ImageWrapper/Public/IImageWrapperModule.h"
 #include "Runtime/ImageWrapper/Public/IImageWrapper.h"
@@ -20,13 +21,23 @@ class APuzzleGameMode : public AGameMode
 private:
 
 	UPROPERTY(EditAnyWhere)
+		APieceGenerator* PieceGenerator;
+
+	UPROPERTY(EditAnyWhere)
 		UTexture2D* PuzzleTexture;
 
 public:
 	APuzzleGameMode();
 
+
+	UFUNCTION(BlueprintCallable)
+		APieceGenerator* GetPieceGenerator() { return PieceGenerator; }
+
 	UFUNCTION(BlueprintCallable)
 		UTexture2D* GetPuzzleTexture() { return PuzzleTexture; }
+
+	UFUNCTION(BlueprintCallable)
+		void InitializeGame();
 
 	UFUNCTION(BlueprintCallable)
 		bool LoadPuzzleTextureData();

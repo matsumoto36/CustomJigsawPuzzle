@@ -4,6 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
+#include "Piece.h"
+
+#include "ProceduralMeshComponent.h"
+#include "Runtime/Core/Public/Math/TransformNonVectorized.h"
 #include "PieceGenerator.generated.h"
 
 UCLASS()
@@ -16,7 +21,11 @@ public:
 	// Sets default values for this actor's properties
 	APieceGenerator();
 
-	void SpawnPiece(int width, int height);
+	UFUNCTION(BlueprintCallable)
+		APiece* SpawnPiece(FTransform SpawnTransform);
+	
+	UFUNCTION(BlueprintCallable)
+		bool CreatePieceMesh(UProceduralMeshComponent* MeshComponent, UMaterialInterface* Material, int x, int y);
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
