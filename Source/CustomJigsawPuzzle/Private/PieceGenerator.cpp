@@ -38,7 +38,7 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform) {
 	return piece;
 }
 
-bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, UMaterialInterface* Material, int x, int y) {
+bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, int x, int y) {
 	
 	// 頂点群
 	TArray<FVector> vertices;
@@ -48,30 +48,52 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, U
 	TArray<FVector> normals;
 	// テクスチャー座標群
 	TArray<FVector2D> texcoords0;
-	// 頂点カラー群（今回は空っぽのまま）
+	// 頂点カラー群
 	TArray<FLinearColor> vertex_colors;
 	// 接線群（今回は空っぽのまま）
 	TArray<FProcMeshTangent> tangents;
 	
 	//頂点群を定義
-	vertices.Emplace(-5.0, -5.0, 0);
-	vertices.Emplace(-5.0, 5.0, 0);
-	vertices.Emplace(5.0, -5.0, 0);
-	vertices.Emplace(5.0, 5.0, 0);
+	vertices.Emplace(-5.0, -5.0, 0.5);
+	vertices.Emplace(-5.0, 5.0, 0.5);
+	vertices.Emplace(5.0, -5.0, 0.5);
+	vertices.Emplace(5.0, 5.0, 0.5);
+	vertices.Emplace(-5.0, -5.0, -0.5);
+	vertices.Emplace(-5.0, 5.0, -0.5);
+	vertices.Emplace(5.0, -5.0, -0.5);
+	vertices.Emplace(5.0, 5.0, -0.5);
 
 	// UE は「左手座標系Z-top」の「反時計回り面生成」なので↑の頂点をこの順序で繋ぐと+Z向きに三角面1つを生成できる。
+	#pragma region poligon
+	//上面
 	indices.Emplace(0);
 	indices.Emplace(1);
 	indices.Emplace(2);
 	indices.Emplace(1);
-	indices.Emplace(2);
 	indices.Emplace(3);
+	indices.Emplace(2);
+	#pragma endregion
 
 	// テクスチャー座標を設定しておけばこんなエグザンプルでも適当なマテリアルをセットして模様出し確認はできます。
 	texcoords0.Emplace(0, 0);
+	texcoords0.Emplace(0, 1);
+	texcoords0.Emplace(1, 0);
+	texcoords0.Emplace(1, 1);
 	texcoords0.Emplace(0, 0);
 	texcoords0.Emplace(0, 0);
 	texcoords0.Emplace(0, 0);
+	texcoords0.Emplace(0, 0);
+
+	//頂点カラーを設定
+	vertex_colors.Emplace(FLinearColor(1, 1, 1));
+	vertex_colors.Emplace(FLinearColor(1, 1, 1));
+	vertex_colors.Emplace(FLinearColor(1, 1, 1));
+	vertex_colors.Emplace(FLinearColor(1, 1, 1));
+	vertex_colors.Emplace(FLinearColor(0, 0, 0));
+	vertex_colors.Emplace(FLinearColor(0, 0, 0));
+	vertex_colors.Emplace(FLinearColor(0, 0, 0));
+	vertex_colors.Emplace(FLinearColor(0, 0, 0));
+
 
 	// UProceduralMeshComponent::CreateMeshSection_LinearColor でメッシュを生成。
 	// 第1引数: セクション番号; 0, 1, 2, ... を与える事で1つの UProceduralMeshComponent に複数のメッシュを内部的に同時に生成できます。
@@ -83,9 +105,6 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, U
 	// 第7引数: 法線群
 	// 第8引数: コリジョン生成フラグ
 	MeshComponent->CreateMeshSection_LinearColor(0, vertices, indices, normals, texcoords0, vertex_colors, tangents, false);
-
-	//マテリアルを設定
-	MeshComponent->SetMaterial(0, Material);
 	
 	return true;
 }

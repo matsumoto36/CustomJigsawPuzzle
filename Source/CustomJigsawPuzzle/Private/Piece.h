@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Runtime/Engine/Classes/Components/BoxComponent.h"
+#include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
+#include "Runtime/Engine/Classes/Materials/MaterialParameterCollection.h"
 #include "ProceduralMeshComponent.h"
 #include "Piece.generated.h"
 
@@ -26,6 +28,25 @@ public:
 
 private:
 
+	const FName TEXTURE_PARAM = "PuzzleTexture";
+	const FName MPC_BASE_COLOR = "BaseEmissionColor";
+	const FName MPC_ACTIVE_COLOR = "ActiveEmissionColor";
+	const FName MPC_SELECT_COLOR = "SelectEmissionColor";
+	const FName EMISSION_PARAM = "Emission";
+
+	UPROPERTY()
+		UMaterialParameterCollection* PieceColorParam;
+
+	UPROPERTY(EditAnywhere)
+		FLinearColor BaseEmissionColor;
+
+	UPROPERTY(EditAnywhere)
+		FLinearColor ActiveEmissionColor;
+
+	UPROPERTY(EditAnywhere)
+		FLinearColor SelectEmissionColor;
+
+
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		class USceneComponent* DummyRoot;
 
@@ -36,13 +57,7 @@ private:
 		UProceduralMeshComponent* PieceMesh;
 
 	UPROPERTY()
-		class UMaterial* BaseMaterial;
-
-	UPROPERTY()
-		class UMaterialInstance* ActiveMaterial;
-
-	UPROPERTY()
-		class UMaterialInstance* SelectMaterial;
+		UMaterialInstanceDynamic* PieceMaterial;
 
 public:
 
@@ -54,8 +69,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 		UProceduralMeshComponent* GetBody() { return PieceMesh; }
 
+	//UFUNCTION(BlueprintCallable)
+	//	void SetBody(UProceduralMeshComponent* NewMesh) {
+	//	PieceMesh->SetProcMeshSection(0, *NewMesh->GetProcMeshSection(0));
+	//	//PieceMesh->SetMaterial(0, PieceMaterial);
+	//}
+
 	UFUNCTION(BlueprintCallable)
-		void SetBody(UProceduralMeshComponent* NewMesh) { PieceMesh = NewMesh; }
+		void SetPuzzleTexture(UTexture2D* NewTexture) { PieceMaterial->SetTextureParameterValue(TEXTURE_PARAM, NewTexture); }
 
 	UFUNCTION()
 		void HandleMouseDown();

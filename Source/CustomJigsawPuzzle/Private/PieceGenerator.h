@@ -25,7 +25,7 @@ public:
 		APiece* SpawnPiece(FTransform SpawnTransform);
 	
 	UFUNCTION(BlueprintCallable)
-		bool CreatePieceMesh(UProceduralMeshComponent* MeshComponent, UMaterialInterface* Material, int x, int y);
+		bool CreatePieceMesh(UProceduralMeshComponent* MeshComponent, int x, int y);
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
