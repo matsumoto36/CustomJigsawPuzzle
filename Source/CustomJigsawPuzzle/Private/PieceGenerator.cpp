@@ -72,9 +72,44 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, i
 	indices.Emplace(1);
 	indices.Emplace(3);
 	indices.Emplace(2);
+	//左面
+	indices.Emplace(4);
+	indices.Emplace(0);
+	indices.Emplace(6);
+	indices.Emplace(0);
+	indices.Emplace(2);
+	indices.Emplace(6);
+	//正面
+	indices.Emplace(6);
+	indices.Emplace(2);
+	indices.Emplace(7);
+	indices.Emplace(2);
+	indices.Emplace(3);
+	indices.Emplace(7);
+	//背面
+	indices.Emplace(7);
+	indices.Emplace(3);
+	indices.Emplace(5);
+	indices.Emplace(3);
+	indices.Emplace(1);
+	indices.Emplace(5);
+	//右面
+	indices.Emplace(5);
+	indices.Emplace(1);
+	indices.Emplace(4);
+	indices.Emplace(1);
+	indices.Emplace(0);
+	indices.Emplace(4);
+	//下面
+	indices.Emplace(6);
+	indices.Emplace(7);
+	indices.Emplace(4);
+	indices.Emplace(7);
+	indices.Emplace(5);
+	indices.Emplace(4);
 	#pragma endregion
 
-	// テクスチャー座標を設定しておけばこんなエグザンプルでも適当なマテリアルをセットして模様出し確認はできます。
+	//上面だけ真面目に設定する
 	texcoords0.Emplace(0, 0);
 	texcoords0.Emplace(0, 1);
 	texcoords0.Emplace(1, 0);
