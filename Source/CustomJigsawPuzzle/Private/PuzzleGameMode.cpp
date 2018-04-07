@@ -45,8 +45,7 @@ void APuzzleGameMode::InitializeGame() {
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	SpawnParams.Template = nullptr;
 
-	PieceGenerator = GetWorld()->SpawnActor<APieceGenerator>(FVector(), FRotator(), SpawnParams);
-	//PieceGenerator = NewObject<APieceGenerator>();
+	PieceGenerator = GetWorld()->SpawnActor<APieceGenerator>(FVector(0, 0, 0), FRotator(0, 0, 0), SpawnParams);
 }
 
 bool APuzzleGameMode::LoadPuzzleTextureData() {
