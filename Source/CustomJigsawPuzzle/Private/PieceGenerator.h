@@ -46,7 +46,7 @@ public:
 		bool CreatePieceMesh(UProceduralMeshComponent* MeshComponent, TArray<FVector> PieceLinePoints);
 
 	UFUNCTION(BlueprintCallable)
-		const TArray<int32> ConvexPartitioning(TArray<FVector> RoundVertices);
+		const TArray<int32> ConvexPartitioning(TArray<FVector> RoundVertices, bool debugDraw = false);
 		
 	UFUNCTION(BlueprintCallable)
 		const TArray<FVector> CreatePieceRoundVertices(TArray<USplineComponent*> SplineArray, int Partition);

@@ -26,22 +26,15 @@ APiece::APiece()
 	};
 	static FConstructorStatics ConstructorStatics;
 
-	// Create dummy root scene component
-	DummyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Dummy0"));
-	RootComponent = DummyRoot;
-
-	//コリジョンを生成
-	PieceCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("Box Collision"));
-	PieceCollision->SetupAttachment(DummyRoot);
-	PieceCollision->SetCollisionProfileName("BlockAll");
-	PieceCollision->SetSimulatePhysics(true);
-	PieceCollision->SetEnableGravity(true);
-	PieceCollision->SetBoxExtent(FVector(10, 10, 1));
-
 	//メッシュを生成
 	PieceMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("PieceMesh0"));
-	PieceMesh->SetCollisionProfileName("NoCollision");
-	PieceMesh->SetupAttachment(PieceCollision);
+	PieceMesh->SetupAttachment(RootComponent);
+	PieceMesh->SetCollisionProfileName("BlockAll");
+	
+	//コリジョン設定
+	PieceMesh->bUseComplexAsSimpleCollision = false;
+	PieceMesh->SetSimulatePhysics(true);
+	PieceMesh->SetEnableGravity(true);
 
 	//色情報を読み込む
 	PieceColorParam = ConstructorStatics.PieceColorParam.Get();
@@ -52,10 +45,9 @@ APiece::APiece()
 	//マテリアルを生成
 	PieceMaterial =
 		UMaterialInstanceDynamic::Create(ConstructorStatics.PieceMaterial.Get(), NULL);
-	PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, ActiveEmissionColor);
+	PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, BaseEmissionColor);
 	
 	PieceMesh->SetMaterial(0, PieceMaterial);
-
 }
 
 void APiece::HandleMouseDown() {
@@ -119,24 +111,24 @@ void APiece::ChangePieceState(EPieceState State) {
 	switch (State) {
 		case EPieceState::EPieceActive:
 			PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, ActiveEmissionColor);
-			PieceCollision->SetSimulatePhysics(true);
-			PieceCollision->SetEnableGravity(true);
-			PieceCollision->SetCollisionProfileName("BlockAll");
+			PieceMesh->SetSimulatePhysics(true);
+			PieceMesh->SetEnableGravity(true);
+			PieceMesh->SetCollisionProfileName("BlockAll");
 			break;
 
 		case EPieceState::EPieceSelect:
 			PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, SelectEmissionColor);
-			PieceCollision->SetSimulatePhysics(false);
-			PieceCollision->SetEnableGravity(false);
-			PieceCollision->SetCollisionProfileName("NoCollision");
+			PieceMesh->SetSimulatePhysics(false);
+			PieceMesh->SetEnableGravity(false);
+			PieceMesh->SetCollisionProfileName("NoCollision");
 			break;
 
 		case EPieceState::ENone:
 		default:
 			PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, BaseEmissionColor);
-			PieceCollision->SetSimulatePhysics(true);
-			PieceCollision->SetEnableGravity(true);
-			PieceCollision->SetCollisionProfileName("BlockAll");
+			PieceMesh->SetSimulatePhysics(true);
+			PieceMesh->SetEnableGravity(true);
+			PieceMesh->SetCollisionProfileName("BlockAll");
 			break;
 	}
 
@@ -147,5 +139,5 @@ void APiece::ChangePieceState(EPieceState State) {
 // Called when the game starts or when spawned
 void APiece::BeginPlay() {
 	Super::BeginPlay();
-
+	PieceMesh->WakeAllRigidBodies();
 }

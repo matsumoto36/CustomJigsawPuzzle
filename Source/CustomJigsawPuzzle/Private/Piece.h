@@ -51,9 +51,6 @@ private:
 		class USceneComponent* DummyRoot;
 
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-		UBoxComponent* PieceCollision;
-
-	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		UProceduralMeshComponent* PieceMesh;
 
 	UPROPERTY()
@@ -64,16 +61,14 @@ public:
 	APiece();
 
 	UFUNCTION(BlueprintCallable)
-		UBoxComponent* GetCollision() { return PieceCollision; }
-
-	UFUNCTION(BlueprintCallable)
 		UProceduralMeshComponent* GetBody() { return PieceMesh; }
 
-	//UFUNCTION(BlueprintCallable)
-	//	void SetBody(UProceduralMeshComponent* NewMesh) {
-	//	PieceMesh->SetProcMeshSection(0, *NewMesh->GetProcMeshSection(0));
-	//	//PieceMesh->SetMaterial(0, PieceMaterial);
-	//}
+	UFUNCTION(BlueprintCallable)
+		void SetPieceScale(FVector NewScale) {
+		SetActorScale3D(NewScale);
+		//‚±‚ê‚ð“ü‚ê‚È‚¢‚ÆƒRƒŠƒWƒ‡ƒ“‚ª•sˆÀ’è‚É‚È‚é
+		UpdateComponentTransforms();
+	}
 
 	UFUNCTION(BlueprintCallable)
 		void SetPuzzleTexture(UTexture2D* NewTexture) { PieceMaterial->SetTextureParameterValue(TEXTURE_PARAM, NewTexture); }

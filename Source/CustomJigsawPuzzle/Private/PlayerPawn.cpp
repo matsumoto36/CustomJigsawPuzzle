@@ -33,8 +33,8 @@ void APlayerPawn::Tick(float DeltaTime)
 			CalcPieceLocation(PieceMovePosition);
 
 			//‚ä‚Á‚­‚èˆÚ“®
-			auto movePos = FMath::VInterpTo(CurrentPieceFocus->GetBody()->GetComponentLocation(), PieceMovePosition, DeltaTime, 10.0f);
-			CurrentPieceFocus->GetCollision()->SetWorldLocation(movePos);
+			auto movePos = FMath::VInterpTo(CurrentPieceFocus->GetActorLocation(), PieceMovePosition, DeltaTime, 10.0f);
+			CurrentPieceFocus->SetActorLocation(movePos);
 		}
 		else {
 
@@ -127,8 +127,8 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 
 	if(HitResult.Actor.IsValid()){
 		
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, HitResult.GetComponent()->GetFName().ToString());
+		//if (GEngine)
+		//	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, HitResult.GetComponent()->GetFName().ToString());
 
 		pieceLocation.Z = HitResult.ImpactPoint.Z + SelectedPieceHeight;
 	}

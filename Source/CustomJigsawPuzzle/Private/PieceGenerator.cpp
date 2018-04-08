@@ -21,25 +21,23 @@ APieceGenerator::APieceGenerator()
 
 APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform) {
 
-	UWorld* const World = GetWorld();
-
-	// Nullチェック
-	if (!World) return nullptr;
-
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.bAllowDuringConstructionScript = true;
 	SpawnParams.bDeferConstruction = false;
 	SpawnParams.bNoFail = true;
 	SpawnParams.Instigator = Instigator;
 	SpawnParams.Name = {};
-	SpawnParams.ObjectFlags = EObjectFlags::RF_NoFlags;
+	SpawnParams.ObjectFlags = EObjectFlags::RF_Dynamic;
 	SpawnParams.OverrideLevel = nullptr;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	SpawnParams.Template = nullptr;
 
 	auto piece =
-		GetWorld()->SpawnActor<APiece>(SpawnTransform.GetLocation(), SpawnTransform.Rotator(), SpawnParams);
+		GetWorld()->SpawnActor<APiece>(APiece::StaticClass(), SpawnTransform.GetLocation(), SpawnTransform.Rotator(), SpawnParams);
+
+	piece->SetActorScale3D(SpawnTransform.GetScale3D());
+	piece->UpdateComponentTransforms();
 
 	//ランダムにピースの形状を作る
 	TArray<USplineComponent*> spline;
@@ -48,32 +46,89 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform) {
 	spline.Emplace(nullptr);
 	spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
 
-	auto vertices = CreatePieceRoundVertices(spline, 32);
-	for (int i = 0; i < vertices.Num(); i++) {
-		vertices[i] *= 10;
-	}
-
-	CreatePieceMesh(piece->GetBody(), vertices);
+	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, 8));
 
 	return piece;
 }
 
 bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, TArray<FVector> PieceLinePoints) {
 	
-	//テクスチャー座標を設定。(座標を半分にして使う。理由はピースの突起部分を貼るエリアが必要なため)
-	//┌─┐大きい四角はUVマップ、小さい四角はピース。
-	//│□│
-	//└─┘
+	TArray<FVector> vertices;
 	TArray<FVector2D> texcoords0;
-	for (auto item : PieceLinePoints) {
-		texcoords0.Emplace(item / 2);
-	}
-
-	//頂点カラーを設定
 	TArray<FLinearColor> vertex_colors;
+
+	//表面の頂点を追加
 	for (int i = 0; i < PieceLinePoints.Num(); i++) {
+		FVector v = PieceLinePoints[i];
+		v.Z = 0.5;
+		vertices.Emplace(v);
+
+		//テクスチャー座標を設定。(座標を半分にして使う。理由はピースの突起部分を貼るエリアが必要なため)
+		//┌─┐大きい四角はUVマップ、小さい四角は突起なしピース。
+		//│□│
+		//└─┘
+		texcoords0.Emplace(PieceLinePoints[i] / 2);
+
+		//頂点カラー
 		vertex_colors.Emplace(FLinearColor(1, 1, 1));
 	}
+
+	//面を貼る
+	auto indices = ConvexPartitioning(PieceLinePoints);
+
+	//裏面を作るために反転
+	//for (int i = 0; i < PieceLinePoints.Num() / 2; i++) {
+	//	PieceLinePoints.SwapMemory(i, (PieceLinePoints.Num() - 1) - i);
+	//}
+
+	//裏面の頂点を追加
+	for (int i = 0; i < PieceLinePoints.Num(); i++) {
+		FVector v = PieceLinePoints[i];
+		v.Z = -0.5;
+		vertices.Emplace(v);
+
+		//テクスチャ座標
+		texcoords0.Emplace(PieceLinePoints[i] / 2);
+
+		//頂点カラー
+		vertex_colors.Emplace(FLinearColor(0, 0, 0));
+	}
+
+	//裏面は表面の情報を利用する
+	int offset = PieceLinePoints.Num();
+	int count = indices.Num();
+	for (int i = 0; i < count; i++) {
+
+		int index;
+		switch (i % 3) {
+			case 0: index = i; break;
+			case 1: index = i + 1; break;
+			case 2: index = i - 1; break;
+		}
+
+		// 0 2 1 3 5 4の順に追加する(面の向きを逆にする)
+		indices.Emplace(indices[index] + offset);
+	}
+
+	//横の面を貼る。
+	int verticesCountHalf = vertices.Num() / 2;
+	for (int i = 1; i < verticesCountHalf; i++) {
+		indices.Emplace(i - 1);
+		indices.Emplace(i);
+		indices.Emplace(verticesCountHalf + i - 1);
+		
+		indices.Emplace(i);
+		indices.Emplace(verticesCountHalf + i);
+		indices.Emplace(verticesCountHalf + i - 1);
+	}
+	//最後の横の面を貼る
+	indices.Emplace(verticesCountHalf - 1);
+	indices.Emplace(0);
+	indices.Emplace(vertices.Num() - 1);
+
+	indices.Emplace(0);
+	indices.Emplace(verticesCountHalf);
+	indices.Emplace(vertices.Num() - 1);
 
 	// UProceduralMeshComponent::CreateMeshSection_LinearColor でメッシュを生成。
 	// 第1引数: セクション番号; 0, 1, 2, ... を与える事で1つの UProceduralMeshComponent に複数のメッシュを内部的に同時に生成できます。
@@ -84,12 +139,24 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 	// 第6引数: 頂点カラー群
 	// 第7引数: 法線群
 	// 第8引数: コリジョン生成フラグ
-	MeshComponent->CreateMeshSection_LinearColor(0, PieceLinePoints, ConvexPartitioning(PieceLinePoints), TArray<FVector>(), texcoords0, vertex_colors, TArray<FProcMeshTangent>(), false);
-	
+	MeshComponent->CreateMeshSection_LinearColor(0, vertices, indices, TArray<FVector>(), texcoords0, vertex_colors, TArray<FProcMeshTangent>(), true);
+
+	//当たり判定の作成
+	TArray<FVector> convexVertices;
+	convexVertices.Emplace(FVector(-0.5, -0.5, -0.5));
+	convexVertices.Emplace(FVector(-0.5, 0.5, -0.5));
+	convexVertices.Emplace(FVector(0.5, -0.5, -0.5));
+	convexVertices.Emplace(FVector(0.5, 0.5, -0.5));
+	convexVertices.Emplace(FVector(-0.5, -0.5, 0.5));
+	convexVertices.Emplace(FVector(-0.5, 0.5, 0.5));
+	convexVertices.Emplace(FVector(0.5, -0.5, 0.5));
+	convexVertices.Emplace(FVector(0.5, 0.5, 0.5));
+	MeshComponent->AddCollisionConvexMesh(convexVertices);
+
 	return true;
 }
 
-const TArray<int32> APieceGenerator::ConvexPartitioning(TArray<FVector> RoundVertices) {
+const TArray<int32> APieceGenerator::ConvexPartitioning(TArray<FVector> RoundVertices, bool debugDraw) {
 
 	//計算用頂点番号データを作成
 	TArray<int32> verticesIndex;
@@ -184,11 +251,13 @@ const TArray<int32> APieceGenerator::ConvexPartitioning(TArray<FVector> RoundVer
 				/*三角形が作成できるので作成して削除*/
 
 				//debug
-				//DrawDebugLine(GetWorld(), RoundVertices[left], RoundVertices[targetPoint], FColor::Red, false, 10.0f);
-				//DrawDebugLine(GetWorld(), RoundVertices[targetPoint], RoundVertices[right], FColor::Red, false, 10.0f);
-				//DrawDebugLine(GetWorld(), RoundVertices[right], RoundVertices[left], FColor::Red, false, 10.0f);
+				if (debugDraw) {
+					DrawDebugLine(GetWorld(), RoundVertices[left] * 100, RoundVertices[targetPoint] * 100, FColor::Red, false, 10.0f);
+					DrawDebugLine(GetWorld(), RoundVertices[targetPoint] * 100, RoundVertices[right] * 100, FColor::Red, false, 10.0f);
+					DrawDebugLine(GetWorld(), RoundVertices[right] * 100, RoundVertices[left] * 100, FColor::Red, false, 10.0f);
 
-				//DrawDebugPoint(GetWorld(), RoundVertices[targetPoint], 10, FColor::Red, false, 10);
+					DrawDebugPoint(GetWorld(), RoundVertices[targetPoint] * 100, 10, FColor::Red, false, 10);
+				}
 
 				//UE4では「左手座標系Z-top」の「反時計回り面生成」
 				indices.Emplace(verticesIndex[right]);
