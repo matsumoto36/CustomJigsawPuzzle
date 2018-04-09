@@ -29,12 +29,18 @@ APiece::APiece()
 	//メッシュを生成
 	PieceMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("PieceMesh0"));
 	PieceMesh->SetupAttachment(RootComponent);
-	PieceMesh->SetCollisionProfileName("BlockAll");
+	PieceMesh->SetCollisionProfileName("PhysicsActor");
 	
 	//コリジョン設定
+	SetActorEnableCollision(true);
 	PieceMesh->bUseComplexAsSimpleCollision = false;
+	PieceMesh->SetAllUseCCD(true);
 	PieceMesh->SetSimulatePhysics(true);
 	PieceMesh->SetEnableGravity(true);
+	PieceMesh->bGenerateOverlapEvents = false;
+	PieceMesh->bAlwaysCreatePhysicsState = true;
+	PieceMesh->GetBodyInstance()->SleepFamily = ESleepFamily::Custom;
+	PieceMesh->GetBodyInstance()->CustomSleepThresholdMultiplier = 0;
 
 	//色情報を読み込む
 	PieceColorParam = ConstructorStatics.PieceColorParam.Get();
@@ -113,7 +119,7 @@ void APiece::ChangePieceState(EPieceState State) {
 			PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, ActiveEmissionColor);
 			PieceMesh->SetSimulatePhysics(true);
 			PieceMesh->SetEnableGravity(true);
-			PieceMesh->SetCollisionProfileName("BlockAll");
+			PieceMesh->SetCollisionProfileName("PhysicsActor");
 			break;
 
 		case EPieceState::EPieceSelect:
@@ -128,7 +134,7 @@ void APiece::ChangePieceState(EPieceState State) {
 			PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, BaseEmissionColor);
 			PieceMesh->SetSimulatePhysics(true);
 			PieceMesh->SetEnableGravity(true);
-			PieceMesh->SetCollisionProfileName("BlockAll");
+			PieceMesh->SetCollisionProfileName("PhysicsActor");
 			break;
 	}
 

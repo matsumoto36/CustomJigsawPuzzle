@@ -66,8 +66,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void SetPieceScale(FVector NewScale) {
 		SetActorScale3D(NewScale);
-		//‚±‚ê‚ð“ü‚ê‚È‚¢‚ÆƒRƒŠƒWƒ‡ƒ“‚ª•sˆÀ’è‚É‚È‚é
-		UpdateComponentTransforms();
 	}
 
 	UFUNCTION(BlueprintCallable)

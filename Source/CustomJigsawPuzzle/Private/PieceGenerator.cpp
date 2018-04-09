@@ -46,7 +46,7 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform) {
 	spline.Emplace(nullptr);
 	spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
 
-	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, 8));
+	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, 32));
 
 	return piece;
 }
@@ -54,8 +54,10 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform) {
 bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, TArray<FVector> PieceLinePoints) {
 	
 	TArray<FVector> vertices;
+	TArray<FVector> normals;
 	TArray<FVector2D> texcoords0;
 	TArray<FLinearColor> vertex_colors;
+	TArray<FProcMeshTangent> tangents;
 
 	//表面の頂点を追加
 	for (int i = 0; i < PieceLinePoints.Num(); i++) {
@@ -71,15 +73,13 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 
 		//頂点カラー
 		vertex_colors.Emplace(FLinearColor(1, 1, 1));
+
+		//法線ベクトル
+		normals.Emplace(FVector(0, 0, 1));
 	}
 
 	//面を貼る
 	auto indices = ConvexPartitioning(PieceLinePoints);
-
-	//裏面を作るために反転
-	//for (int i = 0; i < PieceLinePoints.Num() / 2; i++) {
-	//	PieceLinePoints.SwapMemory(i, (PieceLinePoints.Num() - 1) - i);
-	//}
 
 	//裏面の頂点を追加
 	for (int i = 0; i < PieceLinePoints.Num(); i++) {
@@ -92,12 +92,15 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 
 		//頂点カラー
 		vertex_colors.Emplace(FLinearColor(0, 0, 0));
+
+		//法線ベクトル
+		normals.Emplace(FVector(0, 0, -1));
 	}
 
 	//裏面は表面の情報を利用する
 	int offset = PieceLinePoints.Num();
-	int count = indices.Num();
-	for (int i = 0; i < count; i++) {
+	int indicesCount = indices.Num();
+	for (int i = 0; i < indicesCount; i++) {
 
 		int index;
 		switch (i % 3) {
@@ -108,10 +111,13 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 
 		// 0 2 1 3 5 4の順に追加する(面の向きを逆にする)
 		indices.Emplace(indices[index] + offset);
+
 	}
 
 	//横の面を貼る。
-	int verticesCountHalf = vertices.Num() / 2;
+	int verticesCount = vertices.Num();
+	int verticesCountHalf = verticesCount / 2;
+
 	for (int i = 1; i < verticesCountHalf; i++) {
 		indices.Emplace(i - 1);
 		indices.Emplace(i);
@@ -124,11 +130,35 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 	//最後の横の面を貼る
 	indices.Emplace(verticesCountHalf - 1);
 	indices.Emplace(0);
-	indices.Emplace(vertices.Num() - 1);
+	indices.Emplace(verticesCount - 1);
 
 	indices.Emplace(0);
 	indices.Emplace(verticesCountHalf);
-	indices.Emplace(vertices.Num() - 1);
+	indices.Emplace(verticesCount - 1);
+
+	//頂点法線を計算する
+	//normals.Init(FVector(0, 0, 0), verticesCount);
+	//indicesCount = indices.Num();
+	//for (int i = 0; i < indicesCount; i += 3) {
+
+	//	auto v1 = indices[i];
+	//	auto v2 = indices[i + 1];
+	//	auto v3 = indices[i + 2];
+	//	
+	//	//面法線を計算する
+	//	auto cross = -((vertices[v2] - vertices[v1]) ^ (vertices[v3] - vertices[v2]))
+	//		.GetSafeNormal();
+
+	//	//それぞれの頂点に加算
+	//	normals[v1] += cross;
+	//	normals[v2] += cross;
+	//	normals[v3] += cross;
+
+	//}
+	//for (int i = 0; i < verticesCount; i++) {
+	//	//正規化する
+	//	normals[i] = normals[i].GetSafeNormal();
+	//}
 
 	// UProceduralMeshComponent::CreateMeshSection_LinearColor でメッシュを生成。
 	// 第1引数: セクション番号; 0, 1, 2, ... を与える事で1つの UProceduralMeshComponent に複数のメッシュを内部的に同時に生成できます。
@@ -139,7 +169,7 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 	// 第6引数: 頂点カラー群
 	// 第7引数: 法線群
 	// 第8引数: コリジョン生成フラグ
-	MeshComponent->CreateMeshSection_LinearColor(0, vertices, indices, TArray<FVector>(), texcoords0, vertex_colors, TArray<FProcMeshTangent>(), true);
+	MeshComponent->CreateMeshSection_LinearColor(0, vertices, indices, normals, texcoords0, vertex_colors, tangents, true);
 
 	//当たり判定の作成
 	TArray<FVector> convexVertices;
