@@ -46,7 +46,7 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform) {
 	spline.Emplace(nullptr);
 	spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
 
-	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, 32));
+	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, 8));
 
 	return piece;
 }

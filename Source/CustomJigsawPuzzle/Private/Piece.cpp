@@ -30,17 +30,21 @@ APiece::APiece()
 	PieceMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("PieceMesh0"));
 	PieceMesh->SetupAttachment(RootComponent);
 	PieceMesh->SetCollisionProfileName("PhysicsActor");
-	
+	PieceMesh->bEnableAutoLODGeneration = true;
+
 	//ƒRƒŠƒWƒ‡ƒ“Ý’è
 	SetActorEnableCollision(true);
+	PieceMesh->SetNotifyRigidBodyCollision(true);
 	PieceMesh->bUseComplexAsSimpleCollision = false;
 	PieceMesh->SetAllUseCCD(true);
 	PieceMesh->SetSimulatePhysics(true);
 	PieceMesh->SetEnableGravity(true);
 	PieceMesh->bGenerateOverlapEvents = false;
 	PieceMesh->bAlwaysCreatePhysicsState = true;
-	PieceMesh->GetBodyInstance()->SleepFamily = ESleepFamily::Custom;
-	PieceMesh->GetBodyInstance()->CustomSleepThresholdMultiplier = 0;
+
+	auto hitMethod = FScriptDelegate();
+	hitMethod.BindUFunction(this, "OnHit");
+	PieceMesh->OnComponentHit.Add(hitMethod);
 
 	//Fî•ñ‚ð“Ç‚Ýž‚Þ
 	PieceColorParam = ConstructorStatics.PieceColorParam.Get();
@@ -54,22 +58,19 @@ APiece::APiece()
 	PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, BaseEmissionColor);
 	
 	PieceMesh->SetMaterial(0, PieceMaterial);
+
 }
 
 void APiece::HandleMouseDown() {
+	PieceMesh->SetSimulatePhysics(false);
+	CancelCollisionSleepTimer();
 	ChangePieceState(EPieceState::EPieceSelect);
 }
 
 void APiece::HandleMouseUp() {
+	PieceMesh->SetSimulatePhysics(true);
+	StartCollisionSleepTimer();
 	ChangePieceState(EPieceState::EPieceActive);
-}
-
-void APiece::MouseCursorOverBigin(UPrimitiveComponent* TouchedComponent) {
-	Highlight(true);
-}
-
-void APiece::MouseCursorOverEnd(UPrimitiveComponent* TouchedComponent) {
-	Highlight(false);
 }
 
 void APiece::Highlight(bool bOn) {
@@ -99,13 +100,18 @@ void APiece::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	switch (CurrentState) {
-		case EPieceState::EPieceActive:
-			break;
 		case EPieceState::EPieceSelect:
 			RollingDefault(DeltaTime);
 			break;
+		case EPieceState::EPieceActive:
 		case EPieceState::ENone:
 		default:
+
+			if (IsActiveSleepTimer && (SleepTimer += DeltaTime) > SLEEP_TIME) {
+				IsActiveSleepTimer = false;
+				PieceMesh->SetSimulatePhysics(false);
+			}
+
 			break;
 	}
 }
@@ -117,23 +123,17 @@ void APiece::ChangePieceState(EPieceState State) {
 	switch (State) {
 		case EPieceState::EPieceActive:
 			PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, ActiveEmissionColor);
-			PieceMesh->SetSimulatePhysics(true);
-			PieceMesh->SetEnableGravity(true);
 			PieceMesh->SetCollisionProfileName("PhysicsActor");
 			break;
 
 		case EPieceState::EPieceSelect:
 			PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, SelectEmissionColor);
-			PieceMesh->SetSimulatePhysics(false);
-			PieceMesh->SetEnableGravity(false);
 			PieceMesh->SetCollisionProfileName("NoCollision");
 			break;
 
 		case EPieceState::ENone:
 		default:
 			PieceMaterial->SetVectorParameterValue(EMISSION_PARAM, BaseEmissionColor);
-			PieceMesh->SetSimulatePhysics(true);
-			PieceMesh->SetEnableGravity(true);
 			PieceMesh->SetCollisionProfileName("PhysicsActor");
 			break;
 	}
@@ -142,8 +142,23 @@ void APiece::ChangePieceState(EPieceState State) {
 
 }
 
+void APiece::StartCollisionSleepTimer() {
+
+	if (IsActiveSleepTimer) return;
+
+	IsActiveSleepTimer = true;
+	SleepTimer = 0.0f;
+}
+
+void APiece::CancelCollisionSleepTimer() {
+	IsActiveSleepTimer = false;
+}
+
+void APiece::OnHit() {
+	StartCollisionSleepTimer();
+}
+
 // Called when the game starts or when spawned
 void APiece::BeginPlay() {
 	Super::BeginPlay();
-	PieceMesh->WakeAllRigidBodies();
 }

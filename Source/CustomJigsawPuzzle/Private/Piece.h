@@ -33,6 +33,7 @@ private:
 	const FName MPC_ACTIVE_COLOR = "ActiveEmissionColor";
 	const FName MPC_SELECT_COLOR = "SelectEmissionColor";
 	const FName EMISSION_PARAM = "Emission";
+	const float SLEEP_TIME = 2.0f;
 
 	UPROPERTY()
 		UMaterialParameterCollection* PieceColorParam;
@@ -56,6 +57,9 @@ private:
 	UPROPERTY()
 		UMaterialInstanceDynamic* PieceMaterial;
 
+	bool IsActiveSleepTimer = false;
+	float SleepTimer = 0.0f;
+
 public:
 
 	APiece();
@@ -78,17 +82,13 @@ public:
 		void HandleMouseUp();
 
 	UFUNCTION()
-		void MouseCursorOverBigin(UPrimitiveComponent* TouchedComponent);
-
-	UFUNCTION()
-		void MouseCursorOverEnd(UPrimitiveComponent* TouchedComponent);
-
-	UFUNCTION()
 		void Highlight(bool bOn);
 
 	UFUNCTION()
 		/* ‰ñ“]‚ð–ß‚· */
 		void RollingDefault(float DeltaTime);
+
+
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -97,6 +97,15 @@ protected:
 
 	UFUNCTION()
 		void ChangePieceState(EPieceState State);
+
+	UFUNCTION()
+		void StartCollisionSleepTimer();
+
+	UFUNCTION()
+		void CancelCollisionSleepTimer();
+
+	UFUNCTION()
+		void OnHit();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
