@@ -41,6 +41,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		bool LoadPuzzleTextureData();
+
+	UFUNCTION(BlueprintCallable)
+		TArray<APiece*> GeneratePuzzle(int RowCount, int ColumnCount, FVector2D DistSize, int EdgePartition);
 	
 	UFUNCTION()
 		UTexture2D* LoadTexture2DFromFile(const FString& FileName, bool& IsValid, int32& Width, int32& Height);

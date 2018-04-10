@@ -16,10 +16,10 @@ APieceGenerator::APieceGenerator()
 	PrimaryActorTick.bCanEverTick = true;
 
 	//createDummy
-	CreateDefaultSubobject< USceneComponent >("Dummy")->SetupAttachment(RootComponent);
+	CreateDefaultSubobject<USceneComponent>("Dummy")->SetupAttachment(RootComponent);
 }
 
-APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform) {
+APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, int Partition) {
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.bAllowDuringConstructionScript = true;
@@ -46,7 +46,7 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform) {
 	spline.Emplace(nullptr);
 	spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
 
-	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, 8));
+	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, Partition));
 
 	return piece;
 }

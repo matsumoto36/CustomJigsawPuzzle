@@ -83,12 +83,76 @@ bool APuzzleGameMode::LoadPuzzleTextureData() {
 
 	if (isLoaded) {
 		if (GEngine)
-			//TODO : Fixed Error PuzzleTexture->GetSizeX()
 			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::FromInt(PuzzleTexture->GetSizeX()));
 
 	}
 
 	return isLoaded;
+}
+
+TArray<APiece*> APuzzleGameMode::GeneratePuzzle(int RowCount, int ColumnCount, FVector2D DistSize, int EdgePartition) {
+
+	/*ランダムな曲線データを生成*/
+
+	//ピースの縦の接続を格納 例) - - - -
+	TArray<TArray<USplineComponent*>> splinesConnectVerical;
+	for (int y = 0; y < RowCount - 1; y++) {
+		
+		TArray<USplineComponent*> bff;
+		for (int x = 0; x < ColumnCount; x++) {
+
+			bff.Add(PieceGenerator
+				->CreateSpline(PieceGenerator
+					->CreateJigsawSplinePoints()));
+		}
+		splinesConnectVerical.Add(bff);
+	}
+
+	//ピースの横の接続を格納 例) | | | |
+	TArray<TArray<USplineComponent*>> splinesConnectHorizontal;
+	for (int y = 0; y < RowCount; y++) {
+
+		TArray<USplineComponent*> bff;
+		for (int x = 0; x < ColumnCount - 1; x++) {
+
+			bff.Add(PieceGenerator
+				->CreateSpline(PieceGenerator
+					->CreateJigsawSplinePoints()));
+		}
+		splinesConnectHorizontal.Add(bff);
+	}
+
+	/*組み合わせて頂点を作成*/
+
+	#pragma region memo
+	//左側から時計回りに、へこみを作りたくない場合はnullptrにする
+	//  2
+	// 1□3
+	//  4
+	//
+	//□□□
+	//□□□
+	//□□□の場合( n = nullptr, h = horizontal, v = vertical, ! = inverse)
+	//
+	//        n,        n,  h[0][0],  v[0][0]
+	// !h[0][0],        n,  h[0][1],  v[0][1]
+	// !h[0][1],        n,        n,  v[0][2]
+						    		  
+	//        n, !v[0][0],  h[1][0],  v[1][0]
+	// !h[1][0], !v[0][1],  h[1][1],  v[1][1]
+	// !h[1][1], !v[0][2],        n,  v[1][2]
+	//			            		  
+	//        n, !v[1][0],  h[2][0],        n
+	// !h[2][0], !v[1][1],  h[2][1],        n
+	// !h[2][1], !v[1][2],        n,        n
+	#pragma endregion
+
+	for (int y = 0; y < RowCount; y++) {
+		for (int x = 0; x < ColumnCount; x++) {
+
+		}
+	}
+
 }
 
 UTexture2D* APuzzleGameMode::LoadTexture2DFromFile(const FString& FileName, bool& IsValid, int32& Width, int32& Height) {
