@@ -6,12 +6,12 @@
 
 #include "Engine.h"
 
-#include "Developer/DesktopPlatform/Public/DesktopPlatformModule.h"
+//#include "Developer/DesktopPlatform/Public/DesktopPlatformModule.h"
 #include "Runtime/Engine/Classes/Engine/Texture2D.h"
 #include "Runtime/Slate/Public/Framework/Application/SlateApplication.h"
 #include "Runtime/Core/Public/Misc/FileHelper.h"
 #include "Runtime/Engine/Classes/Engine/World.h"
-#include "Editor/MainFrame/Public/Interfaces/IMainFrameModule.h"
+//#include "Editor/MainFrame/Public/Interfaces/IMainFrameModule.h"
 
 
 APuzzleGameMode::APuzzleGameMode() {
@@ -50,47 +50,102 @@ void APuzzleGameMode::InitializeGame() {
 
 bool APuzzleGameMode::LoadPuzzleTextureData() {
 
-	const void* parentWindowHandle = nullptr;
+	//DesktopPlatformはパッケージ不可
+	return false;
 
-	//ウィンドウハンドルの取得
-	IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>(TEXT("MainFrame"));
-	const TSharedPtr<SWindow>& MainFrameParentWindow = MainFrameModule.GetParentWindow();
-	if (MainFrameParentWindow.IsValid() && MainFrameParentWindow->GetNativeWindow().IsValid()) {
-		parentWindowHandle = MainFrameParentWindow->GetNativeWindow()->GetOSWindowHandle();
-	}
+	//const void* parentWindowHandle = nullptr;
 
-	//ファイルパスの取得
-	TArray<FString> outFilenames;
-	int32 outFilterIndex;
+	////ウィンドウハンドルの取得
+	//IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>(TEXT("MainFrame"));
+	//const TSharedPtr<SWindow>& MainFrameParentWindow = MainFrameModule.GetParentWindow();
+	//if (MainFrameParentWindow.IsValid() && MainFrameParentWindow->GetNativeWindow().IsValid()) {
+	//	parentWindowHandle = MainFrameParentWindow->GetNativeWindow()->GetOSWindowHandle();
+	//}
 
-	bool result = FDesktopPlatformModule::Get()->OpenFileDialog(
-		parentWindowHandle,
-		TEXT("SelectPuzzleTexture"),
-		TEXT(""),
-		TEXT(""),
-		TEXT("Texture|*.png;*.jpg;*.bmp|All Files|*.*"),
-		EFileDialogFlags::None,
-		outFilenames,
-		outFilterIndex);
+	////ファイルパスの取得
+	//TArray<FString> outFilenames;
+	//int32 outFilterIndex;
 
-	//ダイアログがキャンセルされた場合
-	if (!result) return false;
+	//bool result = FDesktopPlatformModule::Get()->OpenFileDialog(
+	//	parentWindowHandle,
+	//	TEXT("SelectPuzzleTexture"),
+	//	TEXT(""),
+	//	TEXT(""),
+	//	TEXT("Texture|*.png;*.jpg;*.bmp|All Files|*.*"),
+	//	EFileDialogFlags::None,
+	//	outFilenames,
+	//	outFilterIndex);
 
-	//パスから読み込み
-	int32 width, height;
-	bool isLoaded;
-	PuzzleTexture = LoadTexture2DFromFile(outFilenames[0], isLoaded, width, height);
+	////ダイアログがキャンセルされた場合
+	//if (!result) return false;
 
-	if (isLoaded) {
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::FromInt(PuzzleTexture->GetSizeX()));
+	////パスから読み込み
+	//int32 width, height;
+	//bool isLoaded;
+	//PuzzleTexture = LoadTexture2DFromFile(outFilenames[0], isLoaded, width, height);
 
-	}
+	//if (isLoaded) {
+	//	if (GEngine)
+	//		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::FromInt(PuzzleTexture->GetSizeX()));
 
-	return isLoaded;
+	//}
+
+	//return isLoaded;	//const void* parentWindowHandle = nullptr;
+
+	////ウィンドウハンドルの取得
+	//IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>(TEXT("MainFrame"));
+	//const TSharedPtr<SWindow>& MainFrameParentWindow = MainFrameModule.GetParentWindow();
+	//if (MainFrameParentWindow.IsValid() && MainFrameParentWindow->GetNativeWindow().IsValid()) {
+	//	parentWindowHandle = MainFrameParentWindow->GetNativeWindow()->GetOSWindowHandle();
+	//}
+
+	////ファイルパスの取得
+	//TArray<FString> outFilenames;
+	//int32 outFilterIndex;
+
+	//bool result = FDesktopPlatformModule::Get()->OpenFileDialog(
+	//	parentWindowHandle,
+	//	TEXT("SelectPuzzleTexture"),
+	//	TEXT(""),
+	//	TEXT(""),
+	//	TEXT("Texture|*.png;*.jpg;*.bmp|All Files|*.*"),
+	//	EFileDialogFlags::None,
+	//	outFilenames,
+	//	outFilterIndex);
+
+	////ダイアログがキャンセルされた場合
+	//if (!result) return false;
+
+	////パスから読み込み
+	//int32 width, height;
+	//bool isLoaded;
+	//PuzzleTexture = LoadTexture2DFromFile(outFilenames[0], isLoaded, width, height);
+
+	//if (isLoaded) {
+	//	if (GEngine)
+	//		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::FromInt(PuzzleTexture->GetSizeX()));
+
+	//}
+
+	//return isLoaded;
 }
 
-TArray<APiece*> APuzzleGameMode::GeneratePuzzle(int RowCount, int ColumnCount, FVector2D DistSize, int EdgePartition) {
+TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int RowCount, int ColumnCount, int EdgePartition) {
+
+	if (RowCount <= 0) {
+		UE_LOG(LogTemp, Error, TEXT("RowCount is Too Small."));
+		return TArray<APiece*>();
+	}
+
+	if (ColumnCount <= 0) {
+		UE_LOG(LogTemp, Error, TEXT("ColumnCount is Too Small."));
+		return TArray<APiece*>();
+	}
+
+	if (EdgePartition <= 1) {
+		UE_LOG(LogTemp, Error, TEXT("EdgePartition is Too Small."));
+		return TArray<APiece*>();
+	}
 
 	/*ランダムな曲線データを生成*/
 
@@ -133,26 +188,77 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(int RowCount, int ColumnCount, F
 	//□□□
 	//□□□
 	//□□□の場合( n = nullptr, h = horizontal, v = vertical, ! = inverse)
-	//
-	//        n,        n,  h[0][0],  v[0][0]
-	// !h[0][0],        n,  h[0][1],  v[0][1]
-	// !h[0][1],        n,        n,  v[0][2]
+	//   <left>     <top>   <right>  <bottom>
+	//00        n,        n,  h[0][0],  v[0][0]
+	//01 !h[0][0],        n,  h[0][1],  v[0][1]
+	//02 !h[0][1],        n,        n,  v[0][2]
 						    		  
-	//        n, !v[0][0],  h[1][0],  v[1][0]
-	// !h[1][0], !v[0][1],  h[1][1],  v[1][1]
-	// !h[1][1], !v[0][2],        n,  v[1][2]
+	//10        n, !v[0][0],  h[1][0],  v[1][0]
+	//11 !h[1][0], !v[0][1],  h[1][1],  v[1][1]
+	//12 !h[1][1], !v[0][2],        n,  v[1][2]
 	//			            		  
-	//        n, !v[1][0],  h[2][0],        n
-	// !h[2][0], !v[1][1],  h[2][1],        n
-	// !h[2][1], !v[1][2],        n,        n
+	//20        n, !v[1][0],  h[2][0],        n
+	//21 !h[2][0], !v[1][1],  h[2][1],        n
+	//22 !h[2][1], !v[1][2],        n,        n
 	#pragma endregion
+
+	auto uDelta = 1.0f / RowCount;
+	auto vDelta = 1.0f / ColumnCount;
+	TArray<APiece*> pieceArray;
 
 	for (int y = 0; y < RowCount; y++) {
 		for (int x = 0; x < ColumnCount; x++) {
+			TArray<USplineComponent*> splineArray;
+			
+			//set left
+			if (x == 0) splineArray.Add(nullptr);
+			else {
+				auto spline = splinesConnectHorizontal[y][x - 1];
+				splineArray.Add(spline);
+				spline->SetRelativeRotation(FRotator(180, 0, 0));
+			}
 
+			//set top
+			if (y == 0) splineArray.Add(nullptr);
+			else {
+				auto spline = splinesConnectVerical[y - 1][x];
+				splineArray.Add(spline);
+				spline->SetRelativeRotation(FRotator(180, 0, 0));
+			}
+
+			//set right
+			if (x == ColumnCount - 1) splineArray.Add(nullptr);
+			else {
+				auto spline = splinesConnectHorizontal[y][x];
+				splineArray.Add(spline);
+				spline->SetRelativeRotation(FRotator(180, 0, 0));
+			}
+
+			//set bottom
+			if (y == RowCount - 1) splineArray.Add(nullptr);
+			else {
+				auto spline = splinesConnectVerical[y][x];
+				splineArray.Add(spline);
+				spline->SetRelativeRotation(FRotator(180, 0, 0));
+			}
+
+			//スポーン位置を設定
+			FTransform transform = FTransform();
+
+			transform.SetLocation(FVector(x + ColumnCount / 2.0f, y + RowCount / 2.0f, 100.0f));
+			transform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+
+			//生成
+			auto piece = PieceGenerator->SpawnPiece(transform, splineArray, EdgePartition);
+
+			//画像の変更
+			piece->SetPuzzleTexture(PieceTexture, uDelta, vDelta, uDelta * x, vDelta * y);
+
+			pieceArray.Emplace(piece);
 		}
 	}
 
+	return pieceArray;
 }
 
 UTexture2D* APuzzleGameMode::LoadTexture2DFromFile(const FString& FileName, bool& IsValid, int32& Width, int32& Height) {
@@ -172,7 +278,7 @@ UTexture2D* APuzzleGameMode::LoadTexture2DFromFile(const FString& FileName, bool
 	//拡張子が判断できなかった場合
 	if (format == EImageFormat::Invalid) return nullptr;
 
-	IImageWrapperPtr ImageWrapper = ImageWrapperModule.CreateImageWrapper(format);
+	auto ImageWrapper = ImageWrapperModule.CreateImageWrapper(format).ToSharedRef();
 
 	//Load From File
 	TArray<uint8> RawFileData;
@@ -182,7 +288,7 @@ UTexture2D* APuzzleGameMode::LoadTexture2DFromFile(const FString& FileName, bool
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Load RawData");
 
 	//Create T2D!
-	if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num())) {
+	if (ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num())) {
 		const TArray<uint8>* UncompressedBGRA = nullptr;
 		if (ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA)) {
 			UTexture2D* loadTexture = UTexture2D::CreateTransient(ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), PF_B8G8R8A8);

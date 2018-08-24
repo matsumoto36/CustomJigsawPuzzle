@@ -40,7 +40,7 @@ public:
 	APieceGenerator();
 
 	UFUNCTION(BlueprintCallable)
-		APiece* SpawnPiece(FTransform SpawnTransform, int Partition);
+		APiece* SpawnPiece(FTransform SpawnTransform, TArray<USplineComponent*> SplineArray, int Partition);
 	
 	UFUNCTION(BlueprintCallable)
 		bool CreatePieceMesh(UProceduralMeshComponent* MeshComponent, TArray<FVector> PieceLinePoints);

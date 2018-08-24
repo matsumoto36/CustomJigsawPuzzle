@@ -2,12 +2,11 @@
 
 #include "PlayerPawn.h"
 #include "Piece.h"
-#include "HeadMountedDisplayFunctionLibrary.h"
+//#include "HeadMountedDisplayFunctionLibrary.h"
 #include "Engine/StaticMesh.h"
-#include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
-#include "DrawDebugHelpers.h"
+//#include "DrawDebugHelpers.h"
 
 #include "Engine.h"
 
@@ -19,6 +18,13 @@ APlayerPawn::APlayerPawn()
 	PrimaryActorTick.bCanEverTick = true;
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
+
+	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+
+	//カメラの生成
+	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
+	MainCamera->SetupAttachment(RootComponent);
+	MainCamera->SetRelativeRotation(FRotator(-90.0f, 00.0f, 0.0f));
 }
 
 // Called every frame
@@ -26,25 +32,9 @@ void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
-		if (bIsSelectPiece) {
-
-			//移動先を計算
-			CalcPieceLocation(PieceMovePosition);
-
-			//ゆっくり移動
-			auto movePos = FMath::VInterpTo(CurrentPieceFocus->GetActorLocation(), PieceMovePosition, DeltaTime, 10.0f);
-			CurrentPieceFocus->SetActorLocation(movePos);
-		}
-		else {
-
-			FVector Start, Dir, End;
-			PC->DeprojectMousePositionToWorld(Start, Dir);
-			End = Start + (Dir * 8000.0f);
-			TraceForBlock(Start, End, false);
-		}
-	}
-
+	//移動の更新
+	UpdatePieceMove(DeltaTime);
+	UpdatePlayerMove(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -52,9 +42,15 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	//入力にバインド
-	PlayerInputComponent->BindAction("SelectButton", EInputEvent::IE_Pressed, this, &APlayerPawn::TriggerMouseDown);
-	PlayerInputComponent->BindAction("SelectButton", EInputEvent::IE_Released, this, &APlayerPawn::TriggerMouseUp);
+	//入力にバインド//
+	//決定キー
+	PlayerInputComponent->BindAction(FName("SelectButton"), EInputEvent::IE_Pressed, this, &APlayerPawn::TriggerMouseDown);
+	PlayerInputComponent->BindAction(FName("SelectButton"), EInputEvent::IE_Released, this, &APlayerPawn::TriggerMouseUp);
+
+	//移動キー
+	PlayerInputComponent->BindAxis(FName("MoveHorizontal"), this, &APlayerPawn::MoveHorizontal);
+	PlayerInputComponent->BindAxis(FName("MoveVertical"), this, &APlayerPawn::MoveVertical);
+	PlayerInputComponent->BindAxis(FName("MoveForword"), this, &APlayerPawn::MoveForword);
 
 }
 
@@ -103,6 +99,18 @@ void APlayerPawn::TriggerMouseUp() {
 	}
 }
 
+void APlayerPawn::MoveHorizontal(float axis) {
+	MoveVector.Y = axis;
+}
+
+void APlayerPawn::MoveVertical(float axis) {
+	MoveVector.X = axis;
+}
+
+void APlayerPawn::MoveForword(float axis) {
+	MoveVector.Z = axis;
+}
+
 // Called when the game starts or when spawned
 void APlayerPawn::BeginPlay() {
 	Super::BeginPlay();
@@ -120,7 +128,7 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 	
 	auto startPosition = pieceBody->GetComponentLocation();
 	auto endPosition = startPosition;
-	endPosition.Z -= 100; //後でconstに移行
+	endPosition.Z -= PIECE_POSITION_Z;
 
 	FHitResult HitResult;
 	GetWorld()->LineTraceSingleByChannel(HitResult, startPosition, endPosition, ECC_Visibility);
@@ -146,14 +154,46 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 		DrawDebugSolidBox(GetWorld(), pieceLocation, FVector(1.0f), FColor::Red);
 
 		//可動範囲外であれば収める
-		if (fabsf(pieceLocation.X) > MaxMoveArea.X)
-			pieceLocation.X = pieceLocation.X > 0 ? MaxMoveArea.X : -MaxMoveArea.X;
-		if (fabsf(pieceLocation.Y) > MaxMoveArea.Y)
-			pieceLocation.Y = pieceLocation.Y > 0 ? MaxMoveArea.Y : -MaxMoveArea.Y;
+		if (fabsf(pieceLocation.X) > MaxMovePieceArea.X)
+			pieceLocation.X = pieceLocation.X > 0 ? MaxMovePieceArea.X : -MaxMovePieceArea.X;
+		if (fabsf(pieceLocation.Y) > MaxMovePieceArea.Y)
+			pieceLocation.Y = pieceLocation.Y > 0 ? MaxMovePieceArea.Y : -MaxMovePieceArea.Y;
 
 		PieceLocation = pieceLocation;
 		return true;
 	}
 
 	return false;
+}
+
+void APlayerPawn::UpdatePieceMove(float DeltaTime) {
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
+		if (bIsSelectPiece) {
+
+			//移動先を計算
+			CalcPieceLocation(PieceMovePosition);
+
+			//ゆっくり移動
+			auto movePos = FMath::VInterpTo(CurrentPieceFocus->GetActorLocation(), PieceMovePosition, DeltaTime, 10.0f);
+			CurrentPieceFocus->SetActorLocation(movePos);
+		}
+		else {
+
+			FVector Start, Dir, End;
+			PC->DeprojectMousePositionToWorld(Start, Dir);
+			End = Start + (Dir * 8000.0f);
+			TraceForBlock(Start, End, false);
+		}
+	}
+
+}
+
+void APlayerPawn::UpdatePlayerMove(float DeltaTime) {
+
+	auto deltaLocation = MoveVector.GetSafeNormal() * MoveSpeed * DeltaTime;
+	UE_LOG(LogTemp, Log, TEXT("speed : %f"), MoveSpeed);
+	UE_LOG(LogTemp, Log, TEXT("delta : %f %f %f"), deltaLocation.X, deltaLocation.Y, deltaLocation.Z);
+	AddActorWorldOffset(deltaLocation, true);
+
 }

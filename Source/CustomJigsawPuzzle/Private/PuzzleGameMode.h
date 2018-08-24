@@ -43,7 +43,7 @@ public:
 		bool LoadPuzzleTextureData();
 
 	UFUNCTION(BlueprintCallable)
-		TArray<APiece*> GeneratePuzzle(int RowCount, int ColumnCount, FVector2D DistSize, int EdgePartition);
+		TArray<APiece*> GeneratePuzzle(UTexture2D* PieceTexture, int RowCount, int ColumnCount, int EdgePartition);
 	
 	UFUNCTION()
 		UTexture2D* LoadTexture2DFromFile(const FString& FileName, bool& IsValid, int32& Width, int32& Height);

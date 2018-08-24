@@ -4,12 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "Camera/CameraComponent.h"
 #include "PlayerPawn.generated.h"
 
 UCLASS()
 class CUSTOMJIGSAWPUZZLE_API APlayerPawn : public APawn
 {
 	GENERATED_BODY()
+
+private:
+	
+	const float PIECE_POSITION_Z = 100;
+
+	FVector MoveVector = FVector();
 
 protected:
 
@@ -23,11 +30,18 @@ protected:
 		FVector PieceMovePosition;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-		FVector2D MaxMoveArea = FVector2D(40.0f, 40.0f);
+		FVector2D MaxMovePieceArea = FVector2D(40.0f, 40.0f);
 
 public:
 
-	bool bIsSelectPiece = false;
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		bool bIsSelectPiece = false;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		float MoveSpeed = 200.0f;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		UCameraComponent* MainCamera;
 
 	// Sets default values for this pawn's properties
 	APlayerPawn();
@@ -44,9 +58,12 @@ protected:
 
 	void TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers);
 
-	void TriggerMouseDown();
+	virtual void TriggerMouseDown();
+	virtual void TriggerMouseUp();
 
-	void TriggerMouseUp();
+	virtual void MoveHorizontal(float axis);
+	virtual void MoveVertical(float axis);
+	virtual void MoveForword(float axis);
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -54,4 +71,8 @@ protected:
 private:
 
 	bool CalcPieceLocation(FVector &PieceLocation);
+
+	void UpdatePieceMove(float DeltaTime);
+
+	void UpdatePlayerMove(float DeltaTime);
 };

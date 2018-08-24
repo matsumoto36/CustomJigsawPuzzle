@@ -6,7 +6,6 @@
 #include "Runtime/Engine/Classes/Engine/World.h"
 #include "Runtime/Core/Public/Math/UnrealMathUtility.h"
 
-
 #include "Engine.h"
 
 // Sets default values
@@ -19,7 +18,7 @@ APieceGenerator::APieceGenerator()
 	CreateDefaultSubobject<USceneComponent>("Dummy")->SetupAttachment(RootComponent);
 }
 
-APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, int Partition) {
+APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, TArray<USplineComponent*> SplineArray, int Partition) {
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.bAllowDuringConstructionScript = true;
@@ -39,14 +38,14 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, int Partition) {
 	piece->SetActorScale3D(SpawnTransform.GetScale3D());
 	piece->UpdateComponentTransforms();
 
-	//ランダムにピースの形状を作る
-	TArray<USplineComponent*> spline;
-	spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
-	spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
-	spline.Emplace(nullptr);
-	spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
+	//ピースの形状を作る
+	//TArray<USplineComponent*> spline;
+	//spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
+	//spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
+	//spline.Emplace(nullptr);
+	//spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
 
-	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, Partition));
+	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(SplineArray, Partition));
 
 	return piece;
 }
@@ -102,7 +101,7 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 	int indicesCount = indices.Num();
 	for (int i = 0; i < indicesCount; i++) {
 
-		int index;
+		int index = 0;
 		switch (i % 3) {
 			case 0: index = i; break;
 			case 1: index = i + 1; break;

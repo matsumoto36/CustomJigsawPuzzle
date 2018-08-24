@@ -5,6 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstance.h"
+//#include "ProceduralMeshComponent.h"
 
 #include "EngineGlobals.h"
 #include "Runtime/Engine/Classes/Engine/Engine.h"
@@ -30,7 +31,7 @@ APiece::APiece()
 	PieceMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("PieceMesh0"));
 	PieceMesh->SetupAttachment(RootComponent);
 	PieceMesh->SetCollisionProfileName("PhysicsActor");
-	PieceMesh->bEnableAutoLODGeneration = true;
+	//PieceMesh->bEnableAutoLODGeneration = true;
 
 	//ƒRƒŠƒWƒ‡ƒ“Ý’è
 	SetActorEnableCollision(true);
@@ -39,7 +40,7 @@ APiece::APiece()
 	PieceMesh->SetAllUseCCD(true);
 	PieceMesh->SetSimulatePhysics(true);
 	PieceMesh->SetEnableGravity(true);
-	PieceMesh->bGenerateOverlapEvents = false;
+	PieceMesh->SetGenerateOverlapEvents(false);
 	PieceMesh->bAlwaysCreatePhysicsState = true;
 
 	auto hitMethod = FScriptDelegate();

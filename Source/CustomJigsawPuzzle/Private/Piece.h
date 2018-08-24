@@ -6,7 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "Runtime/Engine/Classes/Components/BoxComponent.h"
 #include "Runtime/Engine/Classes/Materials/MaterialInstanceDynamic.h"
+//#include "Materials/MaterialInstanceDynamic.h"
 #include "Runtime/Engine/Classes/Materials/MaterialParameterCollection.h"
+//#include "Materials/MaterialParameterCollection.h"
 #include "ProceduralMeshComponent.h"
 #include "Piece.generated.h"
 
@@ -29,6 +31,10 @@ public:
 private:
 
 	const FName TEXTURE_PARAM = "PuzzleTexture";
+	const FName TEXTURE_UTILE_PARAM = "UTile";
+	const FName TEXTURE_VTILE_PARAM = "VTile";
+	const FName TEXTURE_UPOSITION_PARAM = "UPosition";
+	const FName TEXTURE_VPOSITION_PARAM = "VPosition";
 	const FName MPC_BASE_COLOR = "BaseEmissionColor";
 	const FName MPC_ACTIVE_COLOR = "ActiveEmissionColor";
 	const FName MPC_SELECT_COLOR = "SelectEmissionColor";
@@ -73,7 +79,13 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable)
-		void SetPuzzleTexture(UTexture2D* NewTexture) { PieceMaterial->SetTextureParameterValue(TEXTURE_PARAM, NewTexture); }
+		void SetPuzzleTexture(UTexture2D* NewTexture, float UTile, float VTile, float UPosition, float VPosition) {
+		PieceMaterial->SetTextureParameterValue(TEXTURE_PARAM, NewTexture);
+		PieceMaterial->SetScalarParameterValue(TEXTURE_UTILE_PARAM, UTile);
+		PieceMaterial->SetScalarParameterValue(TEXTURE_VTILE_PARAM, VTile);
+		PieceMaterial->SetScalarParameterValue(TEXTURE_UPOSITION_PARAM, UPosition);
+		PieceMaterial->SetScalarParameterValue(TEXTURE_VPOSITION_PARAM, VPosition);
+	}
 
 	UFUNCTION()
 		void HandleMouseDown();
