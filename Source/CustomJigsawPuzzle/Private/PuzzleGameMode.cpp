@@ -208,14 +208,16 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 
 	for (int y = 0; y < RowCount; y++) {
 		for (int x = 0; x < ColumnCount; x++) {
-			TArray<USplineComponent*> splineArray;
 			
+			TArray<USplineComponent*> splineArray;
+
+
 			//set left
 			if (x == 0) splineArray.Add(nullptr);
 			else {
 				auto spline = splinesConnectHorizontal[y][x - 1];
 				splineArray.Add(spline);
-				spline->SetRelativeRotation(FRotator(180, 0, 0));
+				spline->SetRelativeScale3D(FVector(1, spline->GetComponentScale().Y * -1, 1));
 			}
 
 			//set top
@@ -223,7 +225,7 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 			else {
 				auto spline = splinesConnectVerical[y - 1][x];
 				splineArray.Add(spline);
-				spline->SetRelativeRotation(FRotator(180, 0, 0));
+				spline->SetRelativeScale3D(FVector(1, spline->GetComponentScale().Y * -1, 1));
 			}
 
 			//set right
@@ -231,7 +233,7 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 			else {
 				auto spline = splinesConnectHorizontal[y][x];
 				splineArray.Add(spline);
-				spline->SetRelativeRotation(FRotator(180, 0, 0));
+				spline->SetRelativeScale3D(FVector(1, spline->GetComponentScale().Y * -1, 1));
 			}
 
 			//set bottom
@@ -239,7 +241,7 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 			else {
 				auto spline = splinesConnectVerical[y][x];
 				splineArray.Add(spline);
-				spline->SetRelativeRotation(FRotator(180, 0, 0));
+				spline->SetRelativeScale3D(FVector(1, spline->GetComponentScale().Y * -1, 1));
 			}
 
 			//スポーン位置を設定
@@ -252,7 +254,7 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 			auto piece = PieceGenerator->SpawnPiece(transform, splineArray, EdgePartition);
 
 			//画像の変更
-			piece->SetPuzzleTexture(PieceTexture, uDelta, vDelta, uDelta * x, vDelta * y);
+			piece->SetPuzzleTexture(PieceTexture, uDelta, vDelta, uDelta * x + uDelta * 0.5f, vDelta * y + vDelta * 0.5f);
 
 			pieceArray.Emplace(piece);
 		}

@@ -41,10 +41,11 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, TArray<USplineCom
 	//ピースの形状を作る
 	//TArray<USplineComponent*> spline;
 	//spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
-	//spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
 	//spline.Emplace(nullptr);
 	//spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
+	//spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
 
+	//CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, Partition));
 	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(SplineArray, Partition));
 
 	return piece;
@@ -64,11 +65,12 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 		v.Z = 0.5;
 		vertices.Emplace(v);
 
-		//テクスチャー座標を設定。(座標を半分にして使う。理由はピースの突起部分を貼るエリアが必要なため)
-		//┌─┐大きい四角はUVマップ、小さい四角は突起なしピース。
-		//│□│
-		//└─┘
-		texcoords0.Emplace(PieceLinePoints[i] / 2);
+		//テクスチャー座標を設定
+		FVector2D texCoords;
+		texCoords.X = PieceLinePoints[i].Y;
+		texCoords.Y = -PieceLinePoints[i].X;
+
+		texcoords0.Emplace(texCoords);
 
 		//頂点カラー
 		vertex_colors.Emplace(FLinearColor(1, 1, 1));
@@ -86,8 +88,12 @@ bool APieceGenerator::CreatePieceMesh(UProceduralMeshComponent* MeshComponent, T
 		v.Z = -0.5;
 		vertices.Emplace(v);
 
-		//テクスチャ座標
-		texcoords0.Emplace(PieceLinePoints[i] / 2);
+		//テクスチャー座標を設定
+		FVector2D texCoords;
+		texCoords.X = PieceLinePoints[i].Y;
+		texCoords.Y = -PieceLinePoints[i].X;
+
+		texcoords0.Emplace(texCoords);
 
 		//頂点カラー
 		vertex_colors.Emplace(FLinearColor(0, 0, 0));
@@ -322,12 +328,14 @@ const TArray<FVector> APieceGenerator::CreatePieceRoundVertices(TArray<USplineCo
 		FVector(-0.5, -0.5, 0),
 		FVector(0.5,-0.5, 0),
 		FVector(0.5, 0.5, 0),
-		FVector(-0.5, 0.5, 0)
+		FVector(-0.5, 0.5, 0),
 	};
 
 	//Splineの位置調整
 	for (int i = 0; i < 4; i++) {
-		if (SplineArray[i]) SplineArray[i]->SetWorldLocationAndRotation(cyclePoints[i], FRotator(0, i * 90, 0));
+		if (SplineArray[i]) {
+			SplineArray[i]->SetWorldLocationAndRotation(cyclePoints[i], FRotator(0, i * 90, 0));
+		}
 
 	}
 
