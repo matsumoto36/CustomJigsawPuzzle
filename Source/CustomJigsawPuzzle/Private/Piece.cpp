@@ -16,6 +16,8 @@ APiece::APiece()
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentState = EPieceState::ENone;
 
+	//RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+
 	// Structure to hold one-time initialization
 	struct FConstructorStatics {
 		ConstructorHelpers::FObjectFinderOptional<UMaterialInstance> PieceMaterial;

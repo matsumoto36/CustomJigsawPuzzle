@@ -40,7 +40,7 @@ public:
 	APieceGenerator();
 
 	UFUNCTION(BlueprintCallable)
-		APiece* SpawnPiece(FTransform SpawnTransform, TArray<USplineComponent*> SplineArray, int Partition);
+		APiece* SpawnPiece(FTransform SpawnTransform, TArray<FVector> PieceLinePoints);
 	
 	UFUNCTION(BlueprintCallable)
 		bool CreatePieceMesh(UProceduralMeshComponent* MeshComponent, TArray<FVector> PieceLinePoints);
@@ -49,7 +49,7 @@ public:
 		const TArray<int32> ConvexPartitioning(TArray<FVector> RoundVertices, bool debugDraw = false);
 		
 	UFUNCTION(BlueprintCallable)
-		const TArray<FVector> CreatePieceRoundVertices(TArray<USplineComponent*> SplineArray, int Partition);
+		const TArray<FVector> CreatePieceRoundVertices(TArray<USplineComponent*> SplineArray, TArray<bool> InverseFlg, int Partition);
 
 	UFUNCTION(BlueprintCallable)
 		USplineComponent* CreateSpline(TArray<FVector> Points);

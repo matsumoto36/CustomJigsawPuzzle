@@ -18,7 +18,7 @@ APieceGenerator::APieceGenerator()
 	CreateDefaultSubobject<USceneComponent>("Dummy")->SetupAttachment(RootComponent);
 }
 
-APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, TArray<USplineComponent*> SplineArray, int Partition) {
+APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, TArray<FVector> PieceLinePoints) {
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.bAllowDuringConstructionScript = true;
@@ -46,7 +46,7 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, TArray<USplineCom
 	//spline.Emplace(CreateSpline(CreateJigsawSplinePoints()));
 
 	//CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(spline, Partition));
-	CreatePieceMesh(piece->GetBody(), CreatePieceRoundVertices(SplineArray, Partition));
+	CreatePieceMesh(piece->GetBody(), PieceLinePoints);
 
 	return piece;
 }
@@ -320,11 +320,23 @@ const TArray<int32> APieceGenerator::ConvexPartitioning(TArray<FVector> RoundVer
 	return indices;
 }
 
-const TArray<FVector> APieceGenerator::CreatePieceRoundVertices(TArray<USplineComponent*> SplineArray, int Partition) {
+const TArray<FVector> APieceGenerator::CreatePieceRoundVertices(TArray<USplineComponent*> SplineArray, TArray<bool> InverseFlg, int Partition) {
+
+	while (InverseFlg.Num() < 4) {
+		InverseFlg.Add(false);
+	}
+
 
 	//MeshComponentは左側から時計回りに、へこみを作りたくない場合はnullptrにする
 
 	TArray<FVector> cyclePoints = { 
+		FVector(0, -0.5, 0),
+		FVector(0.5,0, 0),
+		FVector(0, 0.5, 0),
+		FVector(-0.5, 0, 0),
+	};
+
+	TArray<FVector> cornerPoints = {
 		FVector(-0.5, -0.5, 0),
 		FVector(0.5,-0.5, 0),
 		FVector(0.5, 0.5, 0),
@@ -334,7 +346,8 @@ const TArray<FVector> APieceGenerator::CreatePieceRoundVertices(TArray<USplineCo
 	//Splineの位置調整
 	for (int i = 0; i < 4; i++) {
 		if (SplineArray[i]) {
-			SplineArray[i]->SetWorldLocationAndRotation(cyclePoints[i], FRotator(0, i * 90, 0));
+			auto rotY = i * 90 + (InverseFlg[i] ? 180 : 0);
+			SplineArray[i]->SetWorldLocationAndRotation(cyclePoints[i], FRotator(0, rotY, 0));
 		}
 
 	}
@@ -346,13 +359,21 @@ const TArray<FVector> APieceGenerator::CreatePieceRoundVertices(TArray<USplineCo
 	for (int i = 0; i < 4; i++) {
 
 		if (SplineArray[i]) {
-			//比率1の頂点は重複するので追加しない
-			for (int j = 0; j < Partition; j++) {
-				points.Emplace(SplineArray[i]->GetWorldLocationAtTime(j / p));
+			if (InverseFlg[i]) {
+				//比率0の頂点は重複するので追加しない
+				for (int j = Partition; j > 0; j--) {
+					points.Emplace(SplineArray[i]->GetWorldLocationAtTime(j / p));
+				}
+			}
+			else {
+				//比率1の頂点は重複するので追加しない
+				for (int j = 0; j < Partition; j++) {
+					points.Emplace(SplineArray[i]->GetWorldLocationAtTime(j / p));
+				}
 			}
 		}
 		else {
-			points.Emplace(cyclePoints[i]);
+			points.Emplace(cornerPoints[i]);
 		}
 
 	}
@@ -384,25 +405,31 @@ USplineComponent* APieceGenerator::CreateSpline(TArray<FVector> Points) {
 
 const TArray<FVector> APieceGenerator::CreateJigsawSplinePoints() {
 	
+	auto offsetX = -0.5f;
+
 	TArray<FVector> points;
-	points.Emplace(FVector(0, 0, 0));
+	points.Emplace(FVector(offsetX, 0, 0));
 	points.Emplace(FVector(
+		offsetX + 
 		FMath::RandRange(baseLineOffsets.xMin, baseLineOffsets.xMax),
 		FMath::RandRange(baseLineOffsets.yMin, baseLineOffsets.yMax), 0
 	));
 	points.Emplace(FVector(
+		offsetX +
 		FMath::RandRange(upperOffsets.xMin, upperOffsets.xMax),
 		FMath::RandRange(upperOffsets.yMin, upperOffsets.yMax), 0
 	));
 	points.Emplace(FVector(
+		offsetX +
 		FMath::RandRange(1 - upperOffsets.xMax, 1 - upperOffsets.xMin),
 		FMath::RandRange(upperOffsets.yMin, upperOffsets.yMax), 0
 	));
 	points.Emplace(FVector(
+		offsetX +
 		FMath::RandRange(1 - baseLineOffsets.xMax, 1 - baseLineOffsets.xMin),
 		FMath::RandRange(baseLineOffsets.yMin, baseLineOffsets.yMax), 0
 	));
-	points.Emplace(FVector(1, 0, 0));
+	points.Emplace(FVector(offsetX + 1, 0, 0));
 
 	return points;
 }

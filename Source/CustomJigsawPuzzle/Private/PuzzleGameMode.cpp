@@ -151,30 +151,40 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 
 	//ピースの縦の接続を格納 例) - - - -
 	TArray<TArray<USplineComponent*>> splinesConnectVerical;
+	TArray<TArray<bool>> scvInverseFlg;
 	for (int y = 0; y < RowCount - 1; y++) {
 		
 		TArray<USplineComponent*> bff;
+		TArray<bool> bffFlg;
 		for (int x = 0; x < ColumnCount; x++) {
 
-			bff.Add(PieceGenerator
+			bff.Emplace(PieceGenerator
 				->CreateSpline(PieceGenerator
 					->CreateJigsawSplinePoints()));
+
+			bffFlg.Emplace(false);
 		}
-		splinesConnectVerical.Add(bff);
+		splinesConnectVerical.Emplace(bff);
+		scvInverseFlg.Emplace(bffFlg);
 	}
 
 	//ピースの横の接続を格納 例) | | | |
 	TArray<TArray<USplineComponent*>> splinesConnectHorizontal;
+	TArray<TArray<bool>> schInverseFlg;
 	for (int y = 0; y < RowCount; y++) {
 
 		TArray<USplineComponent*> bff;
+		TArray<bool> bffFlg;
 		for (int x = 0; x < ColumnCount - 1; x++) {
 
-			bff.Add(PieceGenerator
+			bff.Emplace(PieceGenerator
 				->CreateSpline(PieceGenerator
 					->CreateJigsawSplinePoints()));
+
+			bffFlg.Emplace(false);
 		}
 		splinesConnectHorizontal.Add(bff);
+		schInverseFlg.Emplace(bffFlg);
 	}
 
 	/*組み合わせて頂点を作成*/
@@ -210,38 +220,58 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 		for (int x = 0; x < ColumnCount; x++) {
 			
 			TArray<USplineComponent*> splineArray;
-
+			TArray<bool> splineInverseFlg;
 
 			//set left
-			if (x == 0) splineArray.Add(nullptr);
+			if (x == 0) {
+				splineArray.Emplace(nullptr);
+				splineInverseFlg.Emplace(false);
+			}
 			else {
 				auto spline = splinesConnectHorizontal[y][x - 1];
-				splineArray.Add(spline);
-				spline->SetRelativeScale3D(FVector(1, spline->GetComponentScale().Y * -1, 1));
+				splineArray.Emplace(spline);
+
+				splineInverseFlg.Emplace(schInverseFlg[y][x - 1]);
+				schInverseFlg[y][x - 1] = !schInverseFlg[y][x - 1];
 			}
 
 			//set top
-			if (y == 0) splineArray.Add(nullptr);
+			if (y == 0) {
+				splineArray.Emplace(nullptr);
+				splineInverseFlg.Emplace(false);
+			}
 			else {
 				auto spline = splinesConnectVerical[y - 1][x];
-				splineArray.Add(spline);
-				spline->SetRelativeScale3D(FVector(1, spline->GetComponentScale().Y * -1, 1));
+				splineArray.Emplace(spline);
+
+				splineInverseFlg.Emplace(scvInverseFlg[y - 1][x]);
+				scvInverseFlg[y - 1][x] = !scvInverseFlg[y - 1][x];
 			}
 
 			//set right
-			if (x == ColumnCount - 1) splineArray.Add(nullptr);
+			if (x == ColumnCount - 1) {
+				splineArray.Emplace(nullptr);
+				splineInverseFlg.Emplace(false);
+			}
 			else {
 				auto spline = splinesConnectHorizontal[y][x];
-				splineArray.Add(spline);
-				spline->SetRelativeScale3D(FVector(1, spline->GetComponentScale().Y * -1, 1));
+				splineArray.Emplace(spline);
+
+				splineInverseFlg.Emplace(schInverseFlg[y][x]);
+				schInverseFlg[y][x] = !schInverseFlg[y][x];
 			}
 
 			//set bottom
-			if (y == RowCount - 1) splineArray.Add(nullptr);
+			if (y == RowCount - 1) {
+				splineArray.Emplace(nullptr);
+				splineInverseFlg.Emplace(false);
+			}
 			else {
 				auto spline = splinesConnectVerical[y][x];
-				splineArray.Add(spline);
-				spline->SetRelativeScale3D(FVector(1, spline->GetComponentScale().Y * -1, 1));
+				splineArray.Emplace(spline);
+
+				splineInverseFlg.Emplace(scvInverseFlg[y][x]);
+				//scvInverseFlg[y][x] = !scvInverseFlg[y][x];
 			}
 
 			//スポーン位置を設定
@@ -250,8 +280,11 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 			transform.SetLocation(FVector(x + ColumnCount / 2.0f, y + RowCount / 2.0f, 100.0f));
 			transform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
 
+			//ピースの形状を作成
+			auto pieceLinePoints = PieceGenerator->CreatePieceRoundVertices(splineArray, splineInverseFlg, EdgePartition);
+
 			//生成
-			auto piece = PieceGenerator->SpawnPiece(transform, splineArray, EdgePartition);
+			auto piece = PieceGenerator->SpawnPiece(transform, pieceLinePoints);
 
 			//画像の変更
 			piece->SetPuzzleTexture(PieceTexture, uDelta, vDelta, uDelta * x + uDelta * 0.5f, vDelta * y + vDelta * 0.5f);

@@ -192,8 +192,6 @@ void APlayerPawn::UpdatePieceMove(float DeltaTime) {
 void APlayerPawn::UpdatePlayerMove(float DeltaTime) {
 
 	auto deltaLocation = MoveVector.GetSafeNormal() * MoveSpeed * DeltaTime;
-	UE_LOG(LogTemp, Log, TEXT("speed : %f"), MoveSpeed);
-	UE_LOG(LogTemp, Log, TEXT("delta : %f %f %f"), deltaLocation.X, deltaLocation.Y, deltaLocation.Z);
 	AddActorWorldOffset(deltaLocation, true);
 
 }
