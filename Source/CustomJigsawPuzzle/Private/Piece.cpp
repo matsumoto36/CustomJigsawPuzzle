@@ -10,8 +10,8 @@
 #include "Runtime/Engine/Classes/Engine/Engine.h"
 
 // Sets default values
-APiece::APiece()
-{
+APiece::APiece() {
+
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentState = EPieceState::ENone;
@@ -61,6 +61,40 @@ APiece::APiece()
 	
 	PieceMesh->SetMaterial(0, PieceMaterial);
 
+}
+
+FVector APiece::GetPosition_Implementation() {
+	return GetActorLocation();
+}
+
+bool APiece::SetPosition_Implementation(FVector Position) {
+	SetActorLocation(Position);
+	return true;
+}
+
+bool APiece::Select_Implementation() {
+	HandleMouseDown();
+	return true;
+}
+
+bool APiece::UnSelect_Implementation() {
+	HandleMouseUp();
+	return true;
+}
+
+bool APiece::SetActive_Implementation(bool Enable) {
+	Highlight(Enable);
+	return true;
+}
+
+bool APiece::CheckConnection(APiece* OtherPiece, EPieceSide Side) {
+
+	//Todo ‡‚Á‚Ä‚È‚¢ê‡‚ÍƒŠƒ^[ƒ“
+
+	//Todo ‚­‚Á‚Â‚¯‚é‚Æ‚«‚Ìˆ—‚ğ‘‚­
+
+
+	return false;
 }
 
 void APiece::HandleMouseDown() {

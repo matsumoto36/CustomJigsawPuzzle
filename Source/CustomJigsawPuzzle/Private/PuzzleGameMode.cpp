@@ -271,7 +271,7 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 				splineArray.Emplace(spline);
 
 				splineInverseFlg.Emplace(scvInverseFlg[y][x]);
-				//scvInverseFlg[y][x] = !scvInverseFlg[y][x];
+				scvInverseFlg[y][x] = !scvInverseFlg[y][x];
 			}
 
 			//スポーン位置を設定

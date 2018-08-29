@@ -14,7 +14,7 @@ class CUSTOMJIGSAWPUZZLE_API APlayerPawn : public APawn
 
 private:
 	
-	const float PIECE_POSITION_Z = 100;
+	const float PIECE_POSITION_Z = 10;
 
 	FVector MoveVector = FVector();
 
@@ -24,7 +24,7 @@ protected:
 		float SelectedPieceHeight = 10.0f;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-		class APiece* CurrentPieceFocus;
+		TScriptInterface<class IPieceInterface> CurrentPieceFocus;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 		FVector PieceMovePosition;

@@ -10,6 +10,8 @@
 #include "Runtime/Engine/Classes/Materials/MaterialParameterCollection.h"
 //#include "Materials/MaterialParameterCollection.h"
 #include "ProceduralMeshComponent.h"
+
+#include "PieceInterface.h"
 #include "Piece.generated.h"
 
 UENUM(BlueprintType)
@@ -19,14 +21,18 @@ enum class EPieceState : uint8 {
 	EPieceSelect,
 };
 
+UENUM(BlueprintType)
+enum class EPieceSide : uint8 {
+	ELeft = 0,
+	ETop,
+	ERight,
+	EBottom,
+};
+
 UCLASS()
-class APiece : public AActor
+class CUSTOMJIGSAWPUZZLE_API APiece : public AActor, public IPieceInterface
 {
 	GENERATED_BODY()
-	
-public:
-
-	EPieceState CurrentState;
 
 private:
 
@@ -52,8 +58,7 @@ private:
 
 	UPROPERTY(EditAnywhere)
 		FLinearColor SelectEmissionColor;
-
-
+	
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		class USceneComponent* DummyRoot;
 
@@ -63,15 +68,44 @@ private:
 	UPROPERTY()
 		UMaterialInstanceDynamic* PieceMaterial;
 
+	int PieceMapPosX;
+	int PieceMapPosY;
+
 	bool IsActiveSleepTimer = false;
 	float SleepTimer = 0.0f;
 
 public:
 
+	EPieceState CurrentState;
+
+public:
+
 	APiece();
+
+	virtual FVector GetPosition_Implementation() override;
+
+	virtual bool SetPosition_Implementation(FVector Position) override;
+
+	virtual bool Select_Implementation() override;
+
+	virtual bool UnSelect_Implementation() override;
+
+	virtual bool SetActive_Implementation(bool Enable) override;
 
 	UFUNCTION(BlueprintCallable)
 		UProceduralMeshComponent* GetBody() { return PieceMesh; }
+
+	UFUNCTION(BlueprintCallable)
+		void GetPieceMapPosition(int &MapPosX, int &MapPosY) {
+		MapPosX = PieceMapPosX;
+		MapPosY = PieceMapPosY;
+	}
+
+	UFUNCTION(BlueprintCallable)
+		void SetPieceMapPosition(int MapPosX, int &MapPosY) {
+		PieceMapPosX = MapPosX;
+		PieceMapPosY = MapPosY;
+	}
 
 	UFUNCTION(BlueprintCallable)
 		void SetPieceScale(FVector NewScale) {
@@ -79,13 +113,19 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable)
+		void SetPiecePosition(FVector Position) { SetActorLocation(Position); }
+
+	UFUNCTION(BlueprintCallable)
 		void SetPuzzleTexture(UTexture2D* NewTexture, float UTile, float VTile, float UPosition, float VPosition) {
-		PieceMaterial->SetTextureParameterValue(TEXTURE_PARAM, NewTexture);
+		PieceMaterial->SetTextureParameterValue(TEXTURE_PARAM, ((UTexture*)NewTexture));
 		PieceMaterial->SetScalarParameterValue(TEXTURE_UTILE_PARAM, UTile);
 		PieceMaterial->SetScalarParameterValue(TEXTURE_VTILE_PARAM, VTile);
 		PieceMaterial->SetScalarParameterValue(TEXTURE_UPOSITION_PARAM, UPosition);
 		PieceMaterial->SetScalarParameterValue(TEXTURE_VPOSITION_PARAM, VPosition);
 	}
+
+	UFUNCTION(BlueprintCallable)
+		bool CheckConnection(APiece* OtherPiece, EPieceSide Side);
 
 	UFUNCTION()
 		void HandleMouseDown();
@@ -99,8 +139,6 @@ public:
 	UFUNCTION()
 		/* ‰ñ“]‚ð–ß‚· */
 		void RollingDefault(float DeltaTime);
-
-
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

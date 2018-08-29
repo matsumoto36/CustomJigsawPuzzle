@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerPawn.h"
-#include "Piece.h"
+#include "PieceInterface.h"
 //#include "HeadMountedDisplayFunctionLibrary.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/PlayerController.h"
@@ -68,19 +68,20 @@ void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool b
 		DrawDebugSolidBox(GetWorld(), HitResult.Location, FVector(20.0f), FColor::Red);
 	}
 	if (HitResult.Actor.IsValid()) {
-		APiece* HitPiece = Cast<APiece>(HitResult.Actor.Get());
-		if (CurrentPieceFocus != HitPiece) {
+		auto HitPiece = HitResult.Actor.Get();
+		if (CurrentPieceFocus.GetInterface() != HitPiece) {
 			if (CurrentPieceFocus) {
-				CurrentPieceFocus->Highlight(false);
+				IPieceInterface::Execute_SetActive(CurrentPieceFocus.GetObject(), false);
 			}
-			if (HitPiece) {
-				HitPiece->Highlight(true);
+			if (HitPiece->GetClass()->ImplementsInterface(UPieceInterface::StaticClass())) {
+				IPieceInterface::Execute_SetActive(HitPiece, true);
 			}
-			CurrentPieceFocus = HitPiece;
+			CurrentPieceFocus.SetObject(HitPiece);
+			CurrentPieceFocus.SetInterface(Cast<IPieceInterface>(HitPiece));
 		}
 	}
 	else if (CurrentPieceFocus) {
-		CurrentPieceFocus->Highlight(false);
+		IPieceInterface::Execute_SetActive(CurrentPieceFocus.GetObject(), false);
 		CurrentPieceFocus = nullptr;
 	}
 }
@@ -88,14 +89,14 @@ void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool b
 void APlayerPawn::TriggerMouseDown() {
 	if (CurrentPieceFocus) {
 		bIsSelectPiece = true;
-		CurrentPieceFocus->HandleMouseDown();
+		IPieceInterface::Execute_Select(CurrentPieceFocus.GetObject());
 	}
 }
 
 void APlayerPawn::TriggerMouseUp() {
 	if (CurrentPieceFocus) {
 		bIsSelectPiece = false;
-		CurrentPieceFocus->HandleMouseUp();
+		IPieceInterface::Execute_UnSelect(CurrentPieceFocus.GetObject());
 	}
 }
 
@@ -124,9 +125,9 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 	FVector pieceLocation;
 
 	//–Ú•W‚Ì‚“x‚ðŒvŽZ
-	auto pieceBody = CurrentPieceFocus->GetBody();
+	auto piecePosition = IPieceInterface::Execute_GetPosition(CurrentPieceFocus.GetObject());
 	
-	auto startPosition = pieceBody->GetComponentLocation();
+	auto startPosition = piecePosition;
 	auto endPosition = startPosition;
 	endPosition.Z -= PIECE_POSITION_Z;
 
@@ -173,10 +174,10 @@ void APlayerPawn::UpdatePieceMove(float DeltaTime) {
 
 			//ˆÚ“®æ‚ðŒvŽZ
 			CalcPieceLocation(PieceMovePosition);
-
 			//‚ä‚Á‚­‚èˆÚ“®
-			auto movePos = FMath::VInterpTo(CurrentPieceFocus->GetActorLocation(), PieceMovePosition, DeltaTime, 10.0f);
-			CurrentPieceFocus->SetActorLocation(movePos);
+			auto piecePos = IPieceInterface::Execute_GetPosition(CurrentPieceFocus.GetObject());
+			auto movePos = FMath::VInterpTo(piecePos, PieceMovePosition, DeltaTime, 10.0f);
+			IPieceInterface::Execute_SetPosition(CurrentPieceFocus.GetObject(), movePos);
 		}
 		else {
 
