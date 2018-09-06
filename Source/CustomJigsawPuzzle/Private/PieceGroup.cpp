@@ -2,34 +2,77 @@
 
 #include "PieceGroup.h"
 
-void PieceGroup::AddGroup(APiece* Piece) {
-
+void UPieceGroup::AddGroup(APiece* Piece) {
+	linkedPieceArray.Add(Piece);
 }
 
-PieceGroup::PieceGroup()
-{
+UPieceGroup::UPieceGroup() {}
+
+UPieceGroup::~UPieceGroup() {}
+
+FVector UPieceGroup::GetPosition_Implementation() {
+	return groupPosition - mouseOffset;
 }
 
-PieceGroup::~PieceGroup()
-{
-}
+bool UPieceGroup::SetPosition_Implementation(FVector Position) {
+	groupPosition = Position + mouseOffset;
+	
+	//IPieceInterface::Execute_SetPosition(linkedPieceArray[0], Position);
+	//回転角度は大体すべて同じ
+	auto vecX = linkedPieceArray[0]->GetPieceDirection(EPieceSide::ERight);
+	auto vecY = linkedPieceArray[0]->GetPieceDirection(EPieceSide::EBottom);
 
-FVector PieceGroup::GetPosition() {
-	return FVector();
-}
+	UE_LOG(LogTemp, Log, TEXT("SetPosition Start"));
+	//コメントアウトしたforは初回限定で既存のGroupにピースを追加したときにエラー
+	//for (auto piece : linkedPieceArray) {
+	for (int i = 0; i < linkedPieceArray.Num(); i++) {
+		int x, y;
+		linkedPieceArray[i]->GetPieceMapPosition(x, y);
+		auto scale = linkedPieceArray[i]->GetBody()->GetComponentScale();
+		auto pos = groupPosition;
 
-bool PieceGroup::SetPosition(FVector Position) {
+		//回転を考慮した移動を実装
+		pos += vecX * x * scale.X;
+		pos += vecY * y * scale.Y;
+		if(linkedPieceArray[i]->GetBody())
+			linkedPieceArray[i]->GetBody()->SetWorldLocation(pos);
+		else
+			UE_LOG(LogTemp, Error, TEXT("piece->GetBody() is null"));
+
+	}
+	UE_LOG(LogTemp, Log, TEXT("SetPosition End"));
+	UE_LOG(LogTemp, Log, TEXT("%d"), linkedPieceArray.Num());
+
 	return true;
 }
 
-bool PieceGroup::Select() {
+bool UPieceGroup::Select_Implementation(FVector ClickPos) {
+
+	mouseOffset = groupPosition - ClickPos;
+	mouseOffset.Z = 0;
+
+	UE_LOG(LogTemp, Log, TEXT("Select Start"));
+	for (auto piece : linkedPieceArray) {
+		IPieceInterface::Execute_Select(piece, ClickPos);
+	}
+	UE_LOG(LogTemp, Log, TEXT("Select End"));
 	return true;
 }
 
-bool PieceGroup::UnSelect() {
+bool UPieceGroup::UnSelect_Implementation() {
+	UE_LOG(LogTemp, Log, TEXT("UnSelect Start"));
+	for (auto piece : linkedPieceArray) {
+		IPieceInterface::Execute_UnSelect(piece);
+	}
+	UE_LOG(LogTemp, Log, TEXT("UnSelect End"));
 	return true;
 }
 
-bool PieceGroup::SetActive(bool Enable) {
+bool UPieceGroup::SetActive_Implementation(bool Enable) {
+	UE_LOG(LogTemp, Log, TEXT("SetActive Start"));
+	for (auto piece : linkedPieceArray) {
+		IPieceInterface::Execute_SetActive(piece, Enable);
+	}
+	UE_LOG(LogTemp, Log, TEXT("SetActive End"));
 	return true;
 }

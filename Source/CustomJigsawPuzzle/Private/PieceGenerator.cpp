@@ -35,7 +35,7 @@ APiece* APieceGenerator::SpawnPiece(FTransform SpawnTransform, TArray<FVector> P
 	auto piece =
 		GetWorld()->SpawnActor<APiece>(APiece::StaticClass(), SpawnTransform.GetLocation(), SpawnTransform.Rotator(), SpawnParams);
 
-	piece->SetActorScale3D(SpawnTransform.GetScale3D());
+	piece->SetPieceScale(SpawnTransform.GetScale3D());
 	piece->UpdateComponentTransforms();
 
 	//ピースの形状を作る

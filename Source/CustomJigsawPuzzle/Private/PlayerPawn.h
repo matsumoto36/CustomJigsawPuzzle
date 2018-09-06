@@ -14,14 +14,14 @@ class CUSTOMJIGSAWPUZZLE_API APlayerPawn : public APawn
 
 private:
 	
-	const float PIECE_POSITION_Z = 10;
+	const float PIECE_LOCATION_TRACE_LENGTH = 100;
 
 	FVector MoveVector = FVector();
 
 protected:
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-		float SelectedPieceHeight = 10.0f;
+		float SelectedPieceHeight = 2.0f;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 		TScriptInterface<class IPieceInterface> CurrentPieceFocus;

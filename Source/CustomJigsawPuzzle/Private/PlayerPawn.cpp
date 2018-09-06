@@ -62,25 +62,54 @@ void APlayerPawn::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult
 
 void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers) {
 	FHitResult HitResult;
+
 	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility);
 	if (bDrawDebugHelpers) {
 		DrawDebugLine(GetWorld(), Start, HitResult.Location, FColor::Red);
 		DrawDebugSolidBox(GetWorld(), HitResult.Location, FVector(20.0f), FColor::Red);
 	}
 	if (HitResult.Actor.IsValid()) {
-		auto HitPiece = HitResult.Actor.Get();
-		if (CurrentPieceFocus.GetInterface() != HitPiece) {
-			if (CurrentPieceFocus) {
-				IPieceInterface::Execute_SetActive(CurrentPieceFocus.GetObject(), false);
+		UObject* HitObject = HitResult.Actor.Get();
+
+		if (HitObject->GetClass()->ImplementsInterface(UPieceInterface::StaticClass())) {
+
+			if (auto hitOwner = IPieceInterface::Execute_GetOwnerInterface(HitObject)) {
+				if (hitOwner.GetObject() == CurrentPieceFocus.GetObject()) return;
+
+				if (CurrentPieceFocus) {
+					IPieceInterface::Execute_SetActive(CurrentPieceFocus.GetObject(), false);
+					CurrentPieceFocus = nullptr;
+				}
+
+				if (hitOwner.GetObject()->GetClass()->ImplementsInterface(UPieceInterface::StaticClass())) {
+					//たまにエラー
+					IPieceInterface::Execute_SetActive(hitOwner.GetObject(), true);
+					CurrentPieceFocus = hitOwner;
+				}
+				else {
+					UE_LOG(LogTemp, Error, TEXT("hitOwner fail"));
+				}
+
+				return;
 			}
-			if (HitPiece->GetClass()->ImplementsInterface(UPieceInterface::StaticClass())) {
-				IPieceInterface::Execute_SetActive(HitPiece, true);
+			else {
+
+				if (CurrentPieceFocus) {
+					IPieceInterface::Execute_SetActive(CurrentPieceFocus.GetObject(), false);
+					CurrentPieceFocus = nullptr;
+				}
+
+				IPieceInterface::Execute_SetActive(HitObject, true);
+
+				CurrentPieceFocus.SetObject(HitObject);
+				CurrentPieceFocus.SetInterface(Cast<IPieceInterface>(HitObject));
+
+				return;
 			}
-			CurrentPieceFocus.SetObject(HitPiece);
-			CurrentPieceFocus.SetInterface(Cast<IPieceInterface>(HitPiece));
+
 		}
 	}
-	else if (CurrentPieceFocus) {
+	if (CurrentPieceFocus) {
 		IPieceInterface::Execute_SetActive(CurrentPieceFocus.GetObject(), false);
 		CurrentPieceFocus = nullptr;
 	}
@@ -89,7 +118,9 @@ void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool b
 void APlayerPawn::TriggerMouseDown() {
 	if (CurrentPieceFocus) {
 		bIsSelectPiece = true;
-		IPieceInterface::Execute_Select(CurrentPieceFocus.GetObject());
+		FVector selectPos;
+		CalcPieceLocation(selectPos);
+		IPieceInterface::Execute_Select(CurrentPieceFocus.GetObject(), selectPos);
 	}
 }
 
@@ -129,10 +160,13 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 	
 	auto startPosition = piecePosition;
 	auto endPosition = startPosition;
-	endPosition.Z -= PIECE_POSITION_Z;
+	endPosition.Z -= PIECE_LOCATION_TRACE_LENGTH;
+
+	FCollisionQueryParams collisionQueryParams;
+	collisionQueryParams.AddIgnoredActor(Cast<AActor>(CurrentPieceFocus.GetObject()));
 
 	FHitResult HitResult;
-	GetWorld()->LineTraceSingleByChannel(HitResult, startPosition, endPosition, ECC_Visibility);
+	GetWorld()->LineTraceSingleByChannel(HitResult, startPosition, endPosition, ECC_Visibility, collisionQueryParams);
 
 	if(HitResult.Actor.IsValid()){
 		
@@ -140,6 +174,9 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 		//	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, HitResult.GetComponent()->GetFName().ToString());
 
 		pieceLocation.Z = HitResult.ImpactPoint.Z + SelectedPieceHeight;
+	}
+	else {
+		UE_LOG(LogTemp, Log, TEXT("dont hit Actor"));
 	}
 
 	//目標の位置を計算(PieceLocation.Zとマウス方向が交差する点)
@@ -164,6 +201,8 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 		return true;
 	}
 
+	UE_LOG(LogTemp, Error, TEXT("Fail CalcPieceLocation"));
+
 	return false;
 }
 
@@ -171,6 +210,9 @@ void APlayerPawn::UpdatePieceMove(float DeltaTime) {
 
 	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
 		if (bIsSelectPiece) {
+			//Ownerチェック
+			if(auto owner = IPieceInterface::Execute_GetOwnerInterface(CurrentPieceFocus.GetObject()))
+				CurrentPieceFocus = owner;
 
 			//移動先を計算
 			CalcPieceLocation(PieceMovePosition);

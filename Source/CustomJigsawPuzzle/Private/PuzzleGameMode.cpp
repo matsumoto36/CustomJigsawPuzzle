@@ -22,7 +22,7 @@ APuzzleGameMode::APuzzleGameMode() {
 
 void APuzzleGameMode::InitializeGame() {
 
-	if (GEngine)
+ 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, "Initialize GameMode");
 
 	UWorld* const World = GetWorld();
@@ -285,6 +285,9 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 
 			//¶¬
 			auto piece = PieceGenerator->SpawnPiece(transform, pieceLinePoints);
+
+			//”z’u‚ÌÝ’è
+			piece->SetPieceMapPosition(x, y);
 
 			//‰æ‘œ‚Ì•ÏX
 			piece->SetPuzzleTexture(PieceTexture, uDelta, vDelta, uDelta * x + uDelta * 0.5f, vDelta * y + vDelta * 0.5f);

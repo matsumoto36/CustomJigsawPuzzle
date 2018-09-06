@@ -3,36 +3,55 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PieceInterface.h"
+#include "UObject/NoExportTypes.h"
 #include "Piece.h"
+#include "PieceInterface.h"
+#include "PieceGroup.generated.h"
 
 /**
- * リンクされているピースを同時に操作するためのクラス
+ * 
  */
-class PieceGroup : public IPieceInterface
+UCLASS()
+class UPieceGroup : public UObject, public IPieceInterface
 {
+	GENERATED_BODY()
+	
+private:
 
-	FVector mousePositionOffset;
+	FVector groupPosition;
+	FVector mouseOffset;
 
 public:
 
-	TArray<APiece*> linkedPieceArray;
-	
-	void AddGroup(APiece* Piece);
+	TArray<class APiece*> linkedPieceArray;
 
-	PieceGroup();
-	~PieceGroup();
+	void AddGroup(class APiece* Piece);
+
+	void SetGroupPosition(FVector Position) {
+		groupPosition = Position;
+	}
+
+	void SetMouseOffset(FVector Offset) {
+		mouseOffset = Offset;
+	}
+
+	UPieceGroup();
+	~UPieceGroup();
 
 protected:
 
-	virtual FVector GetPosition();
+	virtual FVector GetPosition_Implementation() override;
 
-	virtual bool SetPosition(FVector Position);
+	virtual bool SetPosition_Implementation(FVector Position) override;
 
-	virtual bool Select();
+	virtual bool Select_Implementation(FVector ClickPos) override;
 
-	virtual bool UnSelect();
+	virtual bool UnSelect_Implementation() override;
 
-	virtual bool SetActive(bool Enable);
+	virtual bool SetActive_Implementation(bool Enable) override;
 
+	virtual TScriptInterface<IPieceInterface> GetOwnerInterface_Implementation() override {
+		return nullptr;
+	}
+	
 };

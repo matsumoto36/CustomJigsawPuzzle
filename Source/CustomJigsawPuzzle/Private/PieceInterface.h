@@ -40,12 +40,15 @@ public:
 		bool SetPosition(FVector Position);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "PieceInterface")
-		bool Select();
+		bool Select(FVector ClickPos);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "PieceInterface")
 		bool UnSelect();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "PieceInterface")
 		bool SetActive(bool Enable);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "PieceInterface")
+		TScriptInterface<IPieceInterface> GetOwnerInterface();
 
 };

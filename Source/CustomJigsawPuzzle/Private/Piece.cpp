@@ -5,6 +5,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstance.h"
+#include "Runtime/Engine/Classes/PhysicsEngine/PhysicsConstraintActor.h"
+#include "Runtime/Engine/Classes/PhysicsEngine/PhysicsConstraintComponent.h"
 
 #include "EngineGlobals.h"
 #include "Runtime/Engine/Classes/Engine/Engine.h"
@@ -15,8 +17,6 @@ APiece::APiece() {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentState = EPieceState::ENone;
-
-	//RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 
 	// Structure to hold one-time initialization
 	struct FConstructorStatics {
@@ -30,8 +30,9 @@ APiece::APiece() {
 
 	//メッシュを生成
 	PieceMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("PieceMesh0"));
-	PieceMesh->SetupAttachment(RootComponent);
+	RootComponent = PieceMesh;
 	PieceMesh->SetCollisionProfileName("PhysicsActor");
+	PieceMesh->ComponentTags.Add(TEXT("PieceMesh"));
 	//PieceMesh->bEnableAutoLODGeneration = true; //パッケージに失敗する*
 
 	//コリジョン設定
@@ -44,9 +45,52 @@ APiece::APiece() {
 	PieceMesh->SetGenerateOverlapEvents(false);
 	PieceMesh->bAlwaysCreatePhysicsState = true;
 
+	//接続のコリジョンを設定
+	TArray<FVector> cyclePoints = {
+		FVector(0, -0.5, 0),
+		FVector(0.5,0, 0),
+		FVector(0, 0.5, 0),
+		FVector(-0.5, 0, 0),
+	};
+
+	for (int i = 0; i < 4; i++) {
+		auto num = FString::FromInt(i);
+		auto name = "PieceCollision" + num;
+		auto collision = CreateDefaultSubobject<UBoxComponent>(FName(*name));
+		collision->SetGenerateOverlapEvents(true);
+		collision->SetupAttachment(RootComponent);
+		collision->SetWorldScale3D(SIDE_COLLISION_SIZE);
+		collision->SetWorldLocationAndRotation(cyclePoints[i], FRotator(0, i * 90, 0));
+		collision->SetCollisionProfileName(TEXT("OverlapAll"));
+		//方向を識別するために番号を入れておく(EPieceSideと同じ)
+		collision->ComponentTags.Add(FName(*num));
+		collision->ComponentTags.Add(SIDE_COLLISION_TAGNAME);
+		PieceSideCollision.Emplace(collision);
+	}
+
+	//SetActiveSideCollision(false);
+
+
+	//イベントの設定
 	auto hitMethod = FScriptDelegate();
 	hitMethod.BindUFunction(this, "OnHit");
 	PieceMesh->OnComponentHit.Add(hitMethod);
+
+	auto overlapEvent = FScriptDelegate();
+	overlapEvent.BindUFunction(this, "OnOverlapBeginLeftSide");
+	PieceSideCollision[0]->OnComponentBeginOverlap.Add(overlapEvent);
+
+	overlapEvent = FScriptDelegate();
+	overlapEvent.BindUFunction(this, "OnOverlapBeginTopSide");
+	PieceSideCollision[1]->OnComponentBeginOverlap.Add(overlapEvent);
+
+	overlapEvent = FScriptDelegate();
+	overlapEvent.BindUFunction(this, "OnOverlapBeginRightSide");
+	PieceSideCollision[2]->OnComponentBeginOverlap.Add(overlapEvent);
+
+	overlapEvent = FScriptDelegate();
+	overlapEvent.BindUFunction(this, "OnOverlapBeginBottomSide");
+	PieceSideCollision[3]->OnComponentBeginOverlap.Add(overlapEvent);
 
 	//色情報を読み込む
 	PieceColorParam = ConstructorStatics.PieceColorParam.Get();
@@ -63,60 +107,145 @@ APiece::APiece() {
 
 }
 
+APiece::~APiece() {
+
+	//if (isGroupCreator) {
+	//	delete owner;
+	//}
+}
+
 FVector APiece::GetPosition_Implementation() {
-	return GetActorLocation();
+	return PieceMesh->GetComponentLocation() - mouseOffset;
 }
 
 bool APiece::SetPosition_Implementation(FVector Position) {
-	SetActorLocation(Position);
+	//SetActorLocation(Position);
+	PieceMesh->SetWorldLocation(Position + mouseOffset);
 	return true;
 }
 
-bool APiece::Select_Implementation() {
-	HandleMouseDown();
+bool APiece::Select_Implementation(FVector ClickPos) {
+	PieceMesh->SetSimulatePhysics(false);
+	mouseOffset = PieceMesh->GetComponentLocation() - ClickPos;
+	UE_LOG(LogTemp, Log, TEXT("%f, %f"), mouseOffset.X, mouseOffset.Y);
+	mouseOffset.Z = 0;
+	CancelCollisionSleepTimer();
+	ChangePieceState(EPieceState::EPieceSelect);
 	return true;
 }
 
 bool APiece::UnSelect_Implementation() {
-	HandleMouseUp();
+	PieceMesh->SetSimulatePhysics(true);
+	StartCollisionSleepTimer();
+	ChangePieceState(EPieceState::EPieceActive);
 	return true;
 }
 
 bool APiece::SetActive_Implementation(bool Enable) {
-	Highlight(Enable);
-	return true;
-}
-
-bool APiece::CheckConnection(APiece* OtherPiece, EPieceSide Side) {
-
-	//Todo 合ってない場合はリターン
-
-	//Todo くっつけるときの処理を書く
-
-
-	return false;
-}
-
-void APiece::HandleMouseDown() {
-	PieceMesh->SetSimulatePhysics(false);
-	CancelCollisionSleepTimer();
-	ChangePieceState(EPieceState::EPieceSelect);
-}
-
-void APiece::HandleMouseUp() {
-	PieceMesh->SetSimulatePhysics(true);
-	StartCollisionSleepTimer();
-	ChangePieceState(EPieceState::EPieceActive);
-}
-
-void APiece::Highlight(bool bOn) {
-
-	if (bOn) {
+	if (Enable) {
 		ChangePieceState(EPieceState::EPieceActive);
 	}
 	else {
 		ChangePieceState(EPieceState::ENone);
 	}
+	return true;
+}
+
+bool APiece::CheckConnection(APiece* OtherPiece, EPieceSide Side) {
+	
+	//合ってない場合はリターン
+	int x, y;
+	OtherPiece->GetPieceMapPosition(x, y);
+	auto mapPos = FVector2D(PieceMapPosX, PieceMapPosY);
+	auto otherMapPos = FVector2D(x, y);
+	auto sideVector = GetVector2D(Side);
+	if (mapPos + sideVector != otherMapPos) return false;
+
+	UE_LOG(LogTemp, Log, TEXT("Connection Start"));
+
+	//くっつける
+	// todo 接続の判定を切る
+	PieceSideCollision[static_cast<int>(Side)]->SetGenerateOverlapEvents(false);
+	OtherPiece
+		->PieceSideCollision[(static_cast<int>(Side) + 6) % 4]
+		->SetGenerateOverlapEvents(false);
+
+	auto scale = PieceMesh->GetComponentScale();
+
+	//論理的なグループを設定
+	if (!owner) {
+		auto group = NewObject<class UPieceGroup>();
+		auto offset = 
+			GetPieceDirection(EPieceSide::ERight) * PieceMapPosX * scale.X +
+			GetPieceDirection(EPieceSide::EBottom) * PieceMapPosY * scale.Y;
+
+		group->SetGroupPosition(IPieceInterface::Execute_GetPosition(this));
+		group->SetMouseOffset(-offset);
+		group->AddGroup(this);
+		SetOwner(TScriptInterface<IPieceInterface>(group));
+	}
+
+	auto otherOwner = OtherPiece->GetOwner();
+	auto myGroup = Cast<UPieceGroup>(owner.GetObject());
+
+	//すでに追加されているピースであればここで終了
+	for (auto p : myGroup->linkedPieceArray) {
+		if (p == OtherPiece) return false;
+	}
+
+	if (otherOwner) {
+		if (auto g = Cast<UPieceGroup>(otherOwner.GetObject())) {
+
+			//相手のグループのピースをすべて追加
+			UE_LOG(LogTemp, Log, TEXT("AddOtherGroup Start"));
+			for (auto piece : g->linkedPieceArray) {
+				piece->SetOwner(owner);
+				IPieceInterface::Execute_Select(piece, FVector());
+				myGroup->AddGroup(piece);
+			}
+			UE_LOG(LogTemp, Log, TEXT("AddOtherGroup End"));
+		}
+	}
+	else {
+		myGroup->AddGroup(OtherPiece);
+		IPieceInterface::Execute_Select(OtherPiece, FVector());
+		OtherPiece->SetOwner(owner);
+	}
+
+	//物理を固定
+	auto position = PieceMesh->GetComponentLocation();
+
+	//XYのスケールが同じことを前提
+	auto otherPos = position + GetPieceDirection(Side) * scale.X;
+
+	UE_LOG(LogTemp, Log, TEXT("%d, %d"), x, y);
+	OtherPiece->PieceMesh->SetWorldLocationAndRotation(otherPos, PieceMesh->GetComponentRotation());
+	OtherPiece->PieceMesh->UpdateComponentToWorld();
+
+	auto constraint = GetWorld()
+		->SpawnActor<APhysicsConstraintActor>()
+		->GetConstraintComp();
+
+	//TODO 制約をセットする
+	constraint->SetDisableCollision(true);
+	
+	constraint->SetLinearXLimit(LCM_Locked, 0);
+	constraint->SetLinearYLimit(LCM_Locked, 0);
+	constraint->SetLinearZLimit(LCM_Locked, 0);
+	constraint->SetLinearPositionDrive(false, false, false);
+	constraint->SetLinearDriveParams(0, 0, 0);
+	
+	constraint->SetAngularSwing1Limit(ACM_Locked, 0);
+	constraint->SetAngularSwing2Limit(ACM_Locked, 0);
+	constraint->SetAngularTwistLimit(ACM_Locked, 0);
+	constraint->SetAngularOrientationDrive(false, false);
+	constraint->SetAngularDriveParams(0, 0, 0);
+	//constraint->ConstraintInstance.AngularDriveMode = EAngularDriveMode::SLERP;
+	constraint->SetConstrainedComponents(PieceMesh, FName(), OtherPiece->PieceMesh, FName());
+
+	UE_LOG(LogTemp, Log, TEXT("Connection"));
+
+	return true;
 }
 
 void APiece::RollingDefault(float DeltaTime) {
@@ -129,6 +258,37 @@ void APiece::RollingDefault(float DeltaTime) {
 	Rotation.Yaw += fabsf(Rotation.Yaw) > rotSpeed ? Rotation.Yaw > 0 ? -rotSpeed : rotSpeed : -Rotation.Yaw;
 
 	PieceMesh->SetWorldRotation(Rotation);
+}
+
+FVector2D APiece::GetVector2D(EPieceSide Side) {
+	switch (Side) {
+		case EPieceSide::ELeft:
+			return FVector2D(-1, 0);
+		case EPieceSide::ETop:
+			return FVector2D(0, -1);
+		case EPieceSide::ERight:
+			return FVector2D(1, 0);
+		case EPieceSide::EBottom:
+			return FVector2D(0, 1);
+		default: return FVector2D();
+	}
+}
+
+FVector APiece::GetPieceDirection(EPieceSide Side) {
+
+	auto transform = PieceMesh->GetComponentTransform();
+
+	switch (Side) {
+		case EPieceSide::ELeft:
+			return -PieceMesh->GetRightVector();
+		case EPieceSide::ETop:
+			return PieceMesh->GetForwardVector();
+		case EPieceSide::ERight:
+			return PieceMesh->GetRightVector();
+		case EPieceSide::EBottom:
+			return -PieceMesh->GetForwardVector();
+		default: return FVector();
+	}
 }
 
 // Called every frame
@@ -192,6 +352,34 @@ void APiece::CancelCollisionSleepTimer() {
 
 void APiece::OnHit() {
 	StartCollisionSleepTimer();
+}
+
+void APiece::OnOverlapBeginLeftSide(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (CurrentState != EPieceState::EPieceSelect) return;
+	if (!OtherComp->ComponentHasTag(SIDE_COLLISION_TAGNAME)) return;
+	UE_LOG(LogTemp, Log, TEXT("OverlapPieceSide left"));
+	CheckConnection(Cast<APiece>(OtherActor), EPieceSide::ELeft);
+}
+
+void APiece::OnOverlapBeginTopSide(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (CurrentState != EPieceState::EPieceSelect) return;
+	if (!OtherComp->ComponentHasTag(SIDE_COLLISION_TAGNAME)) return;
+	UE_LOG(LogTemp, Log, TEXT("OverlapPieceSide top"));
+	CheckConnection(Cast<APiece>(OtherActor), EPieceSide::ETop);
+}
+
+void APiece::OnOverlapBeginRightSide(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (CurrentState != EPieceState::EPieceSelect) return;
+	if (!OtherComp->ComponentHasTag(SIDE_COLLISION_TAGNAME)) return;
+	UE_LOG(LogTemp, Log, TEXT("OverlapPieceSide right"));
+	CheckConnection(Cast<APiece>(OtherActor), EPieceSide::ERight);
+}
+
+void APiece::OnOverlapBeginBottomSide(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (CurrentState != EPieceState::EPieceSelect) return;
+	if (!OtherComp->ComponentHasTag(SIDE_COLLISION_TAGNAME)) return;
+	UE_LOG(LogTemp, Log, TEXT("OverlapPieceSide bottom"));
+	CheckConnection(Cast<APiece>(OtherActor), EPieceSide::EBottom);
 }
 
 // Called when the game starts or when spawned
