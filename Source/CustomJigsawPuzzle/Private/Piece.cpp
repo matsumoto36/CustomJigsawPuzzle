@@ -331,6 +331,8 @@ FVector APiece::GetPieceDirection(EPieceSide Side) {
 void APiece::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
+	HeightCheck();
+
 	switch (CurrentState) {
 		case EPieceState::EPieceSelect:
 			RollingDefault(DeltaTime);
@@ -421,4 +423,14 @@ void APiece::OnOverlapBeginBottomSide(class UPrimitiveComponent* OverlappedCompo
 // Called when the game starts or when spawned
 void APiece::BeginPlay() {
 	Super::BeginPlay();
+}
+
+void APiece::HeightCheck() {
+
+	auto pos = PieceMesh->GetComponentLocation();
+	if (pos.Z > FALL_CHECKHEIGHT) return;
+
+	pos.Z = FALL_RESETHEIGHT;
+	PieceMesh->SetWorldLocation(pos);
+	PieceMesh->SetPhysicsLinearVelocity(FVector());
 }

@@ -51,6 +51,9 @@ private:
 
 	const float SLEEP_TIME = 2.0f;
 
+	const float FALL_CHECKHEIGHT = -50.0f;
+	const float FALL_RESETHEIGHT = 50.0f;
+
 	const FName SIDE_COLLISION_TAGNAME = "piececollision";
 	const FVector SIDE_COLLISION_SIZE = FVector(0.005, 0.005f, 0.05f);
 
@@ -191,5 +194,7 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+
+	void HeightCheck();
 
 };

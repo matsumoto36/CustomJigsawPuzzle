@@ -256,7 +256,9 @@ void APlayerPawn::UpdatePieceMove(float DeltaTime) {
 
 void APlayerPawn::UpdatePlayerMove(float DeltaTime) {
 
-	auto deltaLocation = MoveVector.GetSafeNormal() * MoveSpeed * DeltaTime;
-	AddActorWorldOffset(deltaLocation, true);
-
+	auto pos = GetActorLocation() + MoveVector.GetSafeNormal() * MoveSpeed * DeltaTime;
+	pos.X = FMath::Clamp(pos.X, MoveAreaMin.X, MoveAreaMax.X);
+	pos.Y = FMath::Clamp(pos.Y, MoveAreaMin.Y, MoveAreaMax.Y);
+	pos.Z = FMath::Clamp(pos.Z, MoveAreaMin.Z, MoveAreaMax.Z);
+	SetActorLocation(pos, true);
 }

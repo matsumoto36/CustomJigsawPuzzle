@@ -38,7 +38,13 @@ public:
 		bool bIsSelectPiece = false;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-		float MoveSpeed = 200.0f;
+		float MoveSpeed = 100.0f;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		FVector MoveAreaMax = FVector(200, 200, 300);
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		FVector MoveAreaMin = FVector(-200, -200, 20);
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 		UCameraComponent* MainCamera;
