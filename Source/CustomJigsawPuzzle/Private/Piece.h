@@ -30,6 +30,22 @@ enum class EPieceSide : uint8 {
 	EBottom,
 };
 
+USTRUCT(BlueprintType)
+struct FPieceSideCollisionInfo {
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY(BlueprintReadWrite, Category = "PieceInfo")
+		UBoxComponent* Collision;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "PieceInfo")
+		bool IsHitting;
+
+	UPROPERTY(BlueprintReadWrite, Category = "PieceInfo")
+		APiece* HitOtherPiece;
+};
+
 UCLASS()
 class CUSTOMJIGSAWPUZZLE_API APiece : public AActor, public IPieceInterface
 {
@@ -73,7 +89,7 @@ private:
 		UProceduralMeshComponent* PieceMesh;
 
 	UPROPERTY()
-		TArray<UBoxComponent*> PieceSideCollision;
+		TArray<FPieceSideCollisionInfo> PieceSideCollisionInfo;
 
 	UPROPERTY()
 		UMaterialInstanceDynamic* PieceMaterial;
@@ -179,16 +195,10 @@ protected:
 		void OnHit();
 
 	UFUNCTION()
-		virtual void OnOverlapBeginLeftSide(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+		virtual void OnOverlapBegin(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
-		virtual void OnOverlapBeginTopSide(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-		virtual void OnOverlapBeginRightSide(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-		virtual void OnOverlapBeginBottomSide(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+		virtual void OnOverlapEnd(class UPrimitiveComponent* OverlappedComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

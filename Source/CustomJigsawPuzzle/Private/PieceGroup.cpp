@@ -54,7 +54,10 @@ bool UPieceGroup::Select_Implementation(FVector ClickPos) {
 }
 
 bool UPieceGroup::UnSelect_Implementation() {
-	for (auto piece : linkedPieceArray) {
+
+	//要素数が変わってしまう可能性があるので、別の配列に入れておく
+	auto pieceArray = linkedPieceArray;
+	for (auto piece : pieceArray) {
 		IPieceInterface::Execute_UnSelect(piece);
 	}
 	return true;
