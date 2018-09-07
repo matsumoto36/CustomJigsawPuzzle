@@ -69,12 +69,14 @@ private:
 	UPROPERTY(Category = Block, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		UProceduralMeshComponent* PieceMesh;
 
-	TArray<UBoxComponent*> PieceSideCollision;
+	UPROPERTY()
+		TArray<UBoxComponent*> PieceSideCollision;
 
 	UPROPERTY()
 		UMaterialInstanceDynamic* PieceMaterial;
 
-	TScriptInterface<IPieceInterface> owner = nullptr;
+	UPROPERTY()
+		TScriptInterface<IPieceInterface> pieceOwner = nullptr;
 
 	FVector mouseOffset;
 
@@ -105,16 +107,19 @@ public:
 	virtual bool SetActive_Implementation(bool Enable) override;
 
 	virtual TScriptInterface<IPieceInterface> GetOwnerInterface_Implementation() override {
-		return owner;
+		return pieceOwner;
 	}
 
 
 	UFUNCTION(BlueprintCallable)
 		UProceduralMeshComponent* GetBody() { return PieceMesh; }
 
-	TScriptInterface<IPieceInterface> GetOwner() { return owner; }
+	TScriptInterface<IPieceInterface> GetOwner() { return pieceOwner; }
 
-	void SetOwner(TScriptInterface<IPieceInterface> newOwner) { owner = newOwner; }
+	void SetPieceOwner(TScriptInterface<IPieceInterface> newOwner) { 
+		pieceOwner = newOwner;
+
+	}
 
 	UFUNCTION(BlueprintCallable)
 		void GetPieceMapPosition(int &MapPosX, int &MapPosY) {

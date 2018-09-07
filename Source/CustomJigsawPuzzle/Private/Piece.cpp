@@ -127,7 +127,6 @@ bool APiece::SetPosition_Implementation(FVector Position) {
 bool APiece::Select_Implementation(FVector ClickPos) {
 	PieceMesh->SetSimulatePhysics(false);
 	mouseOffset = PieceMesh->GetComponentLocation() - ClickPos;
-	UE_LOG(LogTemp, Log, TEXT("%f, %f"), mouseOffset.X, mouseOffset.Y);
 	mouseOffset.Z = 0;
 	CancelCollisionSleepTimer();
 	ChangePieceState(EPieceState::EPieceSelect);
@@ -161,55 +160,49 @@ bool APiece::CheckConnection(APiece* OtherPiece, EPieceSide Side) {
 	auto sideVector = GetVector2D(Side);
 	if (mapPos + sideVector != otherMapPos) return false;
 
+	auto otherSide = static_cast<EPieceSide>((static_cast<int>(Side) + 6) % 4);
+
+	//角度差が少ないときのみ通す
+	auto vec1 = GetPieceDirection(Side);
+	auto vec2 = -OtherPiece->GetPieceDirection(otherSide);
+	auto angle = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(vec1, vec2)));
+
+	UE_LOG(LogTemp, Log, TEXT("angle = %f"), angle);
+
+	if (angle > 20) return false;
+	
 	UE_LOG(LogTemp, Log, TEXT("Connection Start"));
 
 	//くっつける
 	// todo 接続の判定を切る
 	PieceSideCollision[static_cast<int>(Side)]->SetGenerateOverlapEvents(false);
 	OtherPiece
-		->PieceSideCollision[(static_cast<int>(Side) + 6) % 4]
+		->PieceSideCollision[static_cast<int>(otherSide)]
 		->SetGenerateOverlapEvents(false);
 
 	auto scale = PieceMesh->GetComponentScale();
 
 	//論理的なグループを設定
-	if (!owner) {
+	if (!pieceOwner) {
 		auto group = NewObject<class UPieceGroup>();
 		auto offset = 
 			GetPieceDirection(EPieceSide::ERight) * PieceMapPosX * scale.X +
 			GetPieceDirection(EPieceSide::EBottom) * PieceMapPosY * scale.Y;
 
-		group->SetGroupPosition(IPieceInterface::Execute_GetPosition(this));
+		group->SetGroupPosition(IPieceInterface::Execute_GetPosition(this) - offset);
 		group->SetMouseOffset(-offset);
 		group->AddGroup(this);
-		SetOwner(TScriptInterface<IPieceInterface>(group));
+		auto ipiece = TScriptInterface<IPieceInterface>();
+		ipiece.SetObject(group);
+		ipiece.SetInterface(Cast<IPieceInterface>(group));
+		SetPieceOwner(ipiece);
 	}
 
-	auto otherOwner = OtherPiece->GetOwner();
-	auto myGroup = Cast<UPieceGroup>(owner.GetObject());
+	auto otherOwner = OtherPiece->pieceOwner;
+	auto myGroup = Cast<UPieceGroup>(pieceOwner.GetObject());
 
-	//すでに追加されているピースであればここで終了
-	for (auto p : myGroup->linkedPieceArray) {
-		if (p == OtherPiece) return false;
-	}
-
-	if (otherOwner) {
-		if (auto g = Cast<UPieceGroup>(otherOwner.GetObject())) {
-
-			//相手のグループのピースをすべて追加
-			UE_LOG(LogTemp, Log, TEXT("AddOtherGroup Start"));
-			for (auto piece : g->linkedPieceArray) {
-				piece->SetOwner(owner);
-				IPieceInterface::Execute_Select(piece, FVector());
-				myGroup->AddGroup(piece);
-			}
-			UE_LOG(LogTemp, Log, TEXT("AddOtherGroup End"));
-		}
-	}
-	else {
-		myGroup->AddGroup(OtherPiece);
-		IPieceInterface::Execute_Select(OtherPiece, FVector());
-		OtherPiece->SetOwner(owner);
+	if (!myGroup) {
+		UE_LOG(LogTemp, Error, TEXT("CAST myGroup is null"));
 	}
 
 	//物理を固定
@@ -226,15 +219,15 @@ bool APiece::CheckConnection(APiece* OtherPiece, EPieceSide Side) {
 		->SpawnActor<APhysicsConstraintActor>()
 		->GetConstraintComp();
 
-	//TODO 制約をセットする
+	//制約をセットする
 	constraint->SetDisableCollision(true);
-	
+
 	constraint->SetLinearXLimit(LCM_Locked, 0);
 	constraint->SetLinearYLimit(LCM_Locked, 0);
 	constraint->SetLinearZLimit(LCM_Locked, 0);
 	constraint->SetLinearPositionDrive(false, false, false);
 	constraint->SetLinearDriveParams(0, 0, 0);
-	
+
 	constraint->SetAngularSwing1Limit(ACM_Locked, 0);
 	constraint->SetAngularSwing2Limit(ACM_Locked, 0);
 	constraint->SetAngularTwistLimit(ACM_Locked, 0);
@@ -242,6 +235,49 @@ bool APiece::CheckConnection(APiece* OtherPiece, EPieceSide Side) {
 	constraint->SetAngularDriveParams(0, 0, 0);
 	//constraint->ConstraintInstance.AngularDriveMode = EAngularDriveMode::SLERP;
 	constraint->SetConstrainedComponents(PieceMesh, FName(), OtherPiece->PieceMesh, FName());
+
+	//すでに追加されているピースであればここで終了
+	for (auto p : myGroup->linkedPieceArray) {
+		if (p == OtherPiece) return false;
+	}
+
+	if (otherOwner) {
+		if (volatile auto g = Cast<UPieceGroup>(otherOwner.GetObject())) {
+
+			if (g == myGroup) {
+				UE_LOG(LogTemp, Error, TEXT("SameGroup"));
+				return false;
+			}
+
+			//相手のグループのピースをすべて追加
+			//コメントアウトしたforはたまにイテレータのエラーが出る
+			//for (auto piece : g->linkedPieceArray) {
+			for (int i = 0; i < g->linkedPieceArray.Num(); i++) {
+				auto piece = g->linkedPieceArray[i];
+				//たまにアクセス違反する?
+				if (!piece) {
+					UE_LOG(LogTemp, Error, TEXT("piece is null"));
+					continue;
+				}
+
+				//たまにアクセス違反する?
+				if (!myGroup) {
+					UE_LOG(LogTemp, Error, TEXT("myGroup is null"));
+					continue;
+				}
+
+				piece->SetPieceOwner(pieceOwner);
+				//これつけてるとなんかめっちゃエラーでる
+				//IPieceInterface::Execute_Select(piece, FVector());
+				myGroup->AddGroup(piece);
+			}
+		}
+	}
+	else {
+		myGroup->AddGroup(OtherPiece);
+		IPieceInterface::Execute_Select(OtherPiece, FVector());
+		OtherPiece->SetPieceOwner(pieceOwner);
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("Connection"));
 

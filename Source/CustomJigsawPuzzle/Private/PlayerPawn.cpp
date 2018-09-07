@@ -8,6 +8,10 @@
 #include "Engine/World.h"
 //#include "DrawDebugHelpers.h"
 
+//debug
+#include "PieceGroup.h"
+
+
 #include "Engine.h"
 
 
@@ -80,7 +84,12 @@ void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool b
 					IPieceInterface::Execute_SetActive(CurrentPieceFocus.GetObject(), false);
 					CurrentPieceFocus = nullptr;
 				}
-
+				
+				//
+				if (!hitOwner.GetObject()) {
+					UE_LOG(LogTemp, Error, TEXT("hitOwner object* fail"));
+					return;
+				}
 				if (hitOwner.GetObject()->GetClass()->ImplementsInterface(UPieceInterface::StaticClass())) {
 					//たまにエラー
 					IPieceInterface::Execute_SetActive(hitOwner.GetObject(), true);
@@ -88,6 +97,19 @@ void APlayerPawn::TraceForBlock(const FVector& Start, const FVector& End, bool b
 				}
 				else {
 					UE_LOG(LogTemp, Error, TEXT("hitOwner fail"));
+					UE_LOG(LogTemp, Error, TEXT("---hitOwner group log---"));
+					auto g = Cast<UPieceGroup>(hitOwner.GetObject());
+					if (!g) {
+						volatile auto d_piece = Cast<APiece>(HitObject);
+						volatile auto d_group = Cast<UPieceGroup>(HitObject);
+					}
+					else {
+						for (int i = 0; i < g->linkedPieceArray.Num(); i++) {
+							auto piece = g->linkedPieceArray[i];
+							auto name = piece ? piece->GetName() : "null";
+							UE_LOG(LogTemp, Error, TEXT("array %d is %s"), i, *name);
+						}
+					}
 				}
 
 				return;
@@ -211,8 +233,8 @@ void APlayerPawn::UpdatePieceMove(float DeltaTime) {
 	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
 		if (bIsSelectPiece) {
 			//Ownerチェック
-			if(auto owner = IPieceInterface::Execute_GetOwnerInterface(CurrentPieceFocus.GetObject()))
-				CurrentPieceFocus = owner;
+			if(auto pieceOwner = IPieceInterface::Execute_GetOwnerInterface(CurrentPieceFocus.GetObject()))
+				CurrentPieceFocus = pieceOwner;
 
 			//移動先を計算
 			CalcPieceLocation(PieceMovePosition);

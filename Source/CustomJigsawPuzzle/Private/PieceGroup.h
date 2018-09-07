@@ -23,7 +23,8 @@ private:
 
 public:
 
-	TArray<class APiece*> linkedPieceArray;
+	UPROPERTY()
+		TArray<class APiece*> linkedPieceArray;
 
 	void AddGroup(class APiece* Piece);
 
