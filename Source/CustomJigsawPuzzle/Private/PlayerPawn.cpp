@@ -214,10 +214,10 @@ bool APlayerPawn::CalcPieceLocation(FVector &PieceLocation) {
 		DrawDebugSolidBox(GetWorld(), pieceLocation, FVector(1.0f), FColor::Red);
 
 		//‰Â“®”ÍˆÍŠO‚Å‚ ‚ê‚ÎŽû‚ß‚é
-		if (fabsf(pieceLocation.X) > MaxMovePieceArea.X)
-			pieceLocation.X = pieceLocation.X > 0 ? MaxMovePieceArea.X : -MaxMovePieceArea.X;
-		if (fabsf(pieceLocation.Y) > MaxMovePieceArea.Y)
-			pieceLocation.Y = pieceLocation.Y > 0 ? MaxMovePieceArea.Y : -MaxMovePieceArea.Y;
+		//if (fabsf(pieceLocation.X) > MaxMovePieceArea.X)
+		//	pieceLocation.X = pieceLocation.X > 0 ? MaxMovePieceArea.X : -MaxMovePieceArea.X;
+		//if (fabsf(pieceLocation.Y) > MaxMovePieceArea.Y)
+		//	pieceLocation.Y = pieceLocation.Y > 0 ? MaxMovePieceArea.Y : -MaxMovePieceArea.Y;
 
 		PieceLocation = pieceLocation;
 		return true;

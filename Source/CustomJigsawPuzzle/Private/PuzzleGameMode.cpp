@@ -130,6 +130,41 @@ bool APuzzleGameMode::LoadPuzzleTextureData() {
 	//return isLoaded;
 }
 
+void APuzzleGameMode::ShuffleAndSetPiece(TArray<APiece*> PieceArray, FVector2D ShuffleArea, float StartHeight) {
+
+	auto size = PieceArray.Num();
+
+	//ç¨Ç∫ÇÈ
+	for (int i = 0; i < size; i++) {
+		auto select = FMath::RandRange(0, size - 1);
+		auto t = PieceArray[i];
+		PieceArray[i] = PieceArray[select];
+		PieceArray[select] = t;
+	}
+
+	//ìKìñÇ…íuÇ≠
+	float setHeight = StartHeight;
+	float dh = PieceArray[0]->GetBody()->GetComponentScale().Z + 0.1f;
+	for (int i = 0; i < size; i++) {
+		
+		auto body = PieceArray[i]->GetBody();
+
+		//âÒì]
+		//îΩì]Ç∑ÇÈÇ©åàÇﬂÇÈ
+		body->AddWorldRotation(FRotator(FMath::RandBool() ? 180 : 0, 0, 0));
+		body->AddWorldRotation(FRotator(0, FMath::RandRange(0.0f, 360.0f), 0));
+
+		//à íuåàÇﬂ
+		body->SetWorldLocation(FVector(
+			FMath::RandRange(-ShuffleArea.X, ShuffleArea.X),
+			FMath::RandRange(-ShuffleArea.Y, ShuffleArea.Y),
+			setHeight
+		));
+
+		setHeight += dh;
+	}
+}
+
 TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int RowCount, int ColumnCount, int EdgePartition) {
 
 	if (RowCount <= 0) {

@@ -43,6 +43,9 @@ public:
 		bool LoadPuzzleTextureData();
 
 	UFUNCTION(BlueprintCallable)
+		void ShuffleAndSetPiece(TArray<APiece*> PieceArray, FVector2D ShuffleArea, float StartHeight);
+
+	UFUNCTION(BlueprintCallable)
 		TArray<APiece*> GeneratePuzzle(UTexture2D* PieceTexture, int RowCount, int ColumnCount, int EdgePartition);
 	
 	UFUNCTION()
