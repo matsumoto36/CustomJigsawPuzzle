@@ -26,6 +26,11 @@ private:
 	UPROPERTY(EditAnyWhere)
 		UTexture2D* PuzzleTexture;
 
+	UPROPERTY(EditAnyWhere)
+		TArray<APiece*> GeneratedPiece;
+
+	bool IsGameClear = false;
+
 public:
 	APuzzleGameMode();
 
@@ -50,6 +55,12 @@ public:
 	
 	UFUNCTION()
 		UTexture2D* LoadTexture2DFromFile(const FString& FileName, bool& IsValid, int32& Width, int32& Height);
+
+	UFUNCTION(BlueprintCallable)
+		bool CheckGameClear();
+
+	UFUNCTION(BlueprintCallable)
+		bool GetIsGameClear() { return IsGameClear; }
 
 	EImageFormat ConvertImageFormat(FString FileExt);
 };

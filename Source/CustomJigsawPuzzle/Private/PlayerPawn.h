@@ -38,6 +38,9 @@ public:
 		bool bIsSelectPiece = false;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+		float MoveSpeedMax = 200.0f;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 		float MoveSpeed = 100.0f;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
@@ -59,6 +62,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
+
+	UFUNCTION(BlueprintCallable)
+		void SetSpeedScale(float scale) {
+		MoveSpeed = MoveSpeedMax * scale;
+	}
 
 protected:
 

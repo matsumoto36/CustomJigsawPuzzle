@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Piece.h"
+#include "PuzzleGameMode.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -268,6 +269,9 @@ bool APiece::CheckConnection(APiece* OtherPiece, EPieceSide Side) {
 
 	//移動の更新
 	IPieceInterface::Execute_SetPosition(pieceOwner.GetObject(), IPieceInterface::Execute_GetPosition(pieceOwner.GetObject()));
+
+	//ゲームクリア判定
+	((APuzzleGameMode*)GetWorld()->GetAuthGameMode())->CheckGameClear();
 
 	return true;
 }

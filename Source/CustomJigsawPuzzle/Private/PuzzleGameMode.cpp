@@ -182,6 +182,8 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 		return TArray<APiece*>();
 	}
 
+	PuzzleTexture = PieceTexture;
+
 	/*ランダムな曲線データを生成*/
 
 	//ピースの縦の接続を格納 例) - - - -
@@ -331,7 +333,7 @@ TArray<APiece*> APuzzleGameMode::GeneratePuzzle(UTexture2D* PieceTexture, int Ro
 		}
 	}
 
-	return pieceArray;
+	return GeneratedPiece = pieceArray;
 }
 
 UTexture2D* APuzzleGameMode::LoadTexture2DFromFile(const FString& FileName, bool& IsValid, int32& Width, int32& Height) {
@@ -404,6 +406,21 @@ UTexture2D* APuzzleGameMode::LoadTexture2DFromFile(const FString& FileName, bool
 
 	return nullptr;
 }
+
+bool APuzzleGameMode::CheckGameClear() {
+
+	TScriptInterface<IPieceInterface> checkOwner = nullptr;
+	for (auto piece : GeneratedPiece) {
+		UE_LOG(LogTemp, Log, TEXT("%s"), *piece->GetName());
+		auto o = IPieceInterface::Execute_GetOwnerInterface(piece);
+		if (!o) return false;
+		if (!checkOwner) checkOwner = o;
+		if (checkOwner != o) return false;
+	}
+
+	return IsGameClear = true;
+}
+
 
 EImageFormat APuzzleGameMode::ConvertImageFormat(FString FileExt) {
 
